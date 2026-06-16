@@ -1,0 +1,14 @@
+{
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "www.rba.gov.au",
+        "*.rba.gov.au",
+        "stooq.com",
+        "stooq.pl",
+        "query1.finance.yahoo.com",
+        "query2.finance.yahoo.com"
+      ]
+    }
+  }
+}
