@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Local data cache / outputs (do not commit fetched market data)
+data/*.csv
+data/*.json
+!data/.gitkeep
+*.local.json
