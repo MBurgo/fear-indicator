@@ -24,6 +24,7 @@ an ASX/S&P-licensed price product.
 from __future__ import annotations
 
 import io
+import time
 
 import pandas as pd
 import requests
@@ -48,8 +49,24 @@ COMMODITY_BASKET = (
     ("PNICKUSDM", "nickel", 0.10),
 )
 
-_TIMEOUT = 30
+_TIMEOUT = 60
+_RETRIES = 4
 _HEADERS = {"User-Agent": "asx-drivers-index/0.1"}
+
+
+def _get_text(url: str, params: dict | None = None) -> str:
+    """GET text with retries and backoff (FRED can be slow/throttled from CI)."""
+    last: Exception | None = None
+    for attempt in range(_RETRIES):
+        try:
+            resp = requests.get(url, params=params, timeout=_TIMEOUT, headers=_HEADERS)
+            resp.raise_for_status()
+            return resp.text
+        except requests.RequestException as exc:
+            last = exc
+            if attempt < _RETRIES - 1:
+                time.sleep(2 ** attempt)  # 1s, 2s, 4s
+    raise last  # type: ignore[misc]
 
 
 def _looks_like_html(text: str) -> bool:
@@ -83,11 +100,7 @@ def parse_fredgraph_csv(text: str, series_id: str | None = None) -> pd.Series:
 def load_series(series_id: str, text: str | None = None) -> pd.Series:
     """Load one FRED series by id (keyless). Pass ``text`` to parse offline."""
     if text is None:
-        resp = requests.get(
-            FREDGRAPH_URL, params={"id": series_id}, timeout=_TIMEOUT, headers=_HEADERS
-        )
-        resp.raise_for_status()
-        text = resp.text
+        text = _get_text(FREDGRAPH_URL, params={"id": series_id})
     return parse_fredgraph_csv(text, series_id)
 
 

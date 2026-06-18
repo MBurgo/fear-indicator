@@ -12,6 +12,7 @@ parser locates that row rather than assuming a fixed header position.
 from __future__ import annotations
 
 import io
+import time
 
 import pandas as pd
 import requests
@@ -24,13 +25,25 @@ AUDUSD_SERIES_ID = "FXRUSD"
 CGS_10Y_SERIES_ID = "FCMYGBAG10D"
 CGS_2Y_SERIES_ID = "FCMYGBAG2D"
 
-_TIMEOUT = 30
+_TIMEOUT = 60
+_RETRIES = 4
 
 
 def _fetch(url: str) -> str:
-    resp = requests.get(url, timeout=_TIMEOUT, headers={"User-Agent": "asx-mood-index/0.1"})
-    resp.raise_for_status()
-    return resp.text
+    """GET text with retries and backoff (be resilient to CI throttling)."""
+    last: Exception | None = None
+    for attempt in range(_RETRIES):
+        try:
+            resp = requests.get(
+                url, timeout=_TIMEOUT, headers={"User-Agent": "asx-mood-index/0.1"}
+            )
+            resp.raise_for_status()
+            return resp.text
+        except requests.RequestException as exc:
+            last = exc
+            if attempt < _RETRIES - 1:
+                time.sleep(2 ** attempt)
+    raise last  # type: ignore[misc]
 
 
 def parse_rba_csv(text: str, series_id: str) -> pd.Series:
