@@ -1,0 +1,144 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a212b;
+  --panel-2: #222b37;
+  --text: #e6edf3;
+  --muted: #8b98a5;
+  --line: #2d3742;
+
+  --extreme-fear: #c0392b;
+  --fear: #e67e22;
+  --neutral: #b8a93a;
+  --greed: #2ecc71;
+  --extreme-greed: #1f9d57;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.head h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 0;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Gauge */
+.gauge-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+#gauge { width: 100%; max-width: 420px; height: auto; }
+
+.gauge-readout { width: 100%; }
+
+.score {
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.label {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.asof {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Components */
+.components { display: grid; gap: 14px; }
+
+.component {
+  display: grid;
+  grid-template-columns: 130px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+.component .name { color: var(--text); font-size: 14px; }
+
+.component .track {
+  position: relative;
+  height: 10px;
+  background: var(--panel-2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.component .fill {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  border-radius: 6px;
+}
+
+.component .val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* History */
+#history { width: 100%; height: auto; }
+
+.history-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Footer */
+.foot { margin-top: 24px; }
+.foot p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.disclaimer { font-size: 12px; }
+
+@media (max-width: 520px) {
+  .score { font-size: 52px; }
+  .component { grid-template-columns: 96px 1fr 40px; }
+}

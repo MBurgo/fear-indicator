@@ -11,3 +11,6 @@ data/*.csv
 data/*.json
 !data/.gitkeep
 *.local.json
+
+# Front-end live data (generated from the CLI; sample is committed)
+web/data.json

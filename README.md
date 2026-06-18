@@ -43,6 +43,28 @@ PYTHONPATH=src python -m asx_mood.cli --source synthetic
 PYTHONPATH=src python -m asx_mood.cli --source live --json reading.json --history history.csv
 ```
 
+## Front end
+
+A dependency-free static dashboard lives in `web/` (vanilla HTML/CSS/SVG, no build
+step, no CDN libraries). It renders the gauge, the component breakdown and a
+trailing-history chart from the JSON the CLI emits.
+
+```bash
+# 1. Generate the data file the page reads (live or synthetic):
+PYTHONPATH=src python -m asx_mood.cli --source live --json web/data.json
+
+# 2. Serve the directory and open it:
+python -m http.server --directory web 8137   # -> http://localhost:8137
+```
+
+The page loads `web/data.json` if present and otherwise falls back to the
+committed `web/data.sample.json`, so it renders out of the box. `web/data.json`
+is gitignored (it's generated; the sample is the only committed data file). The
+JSON schema is exactly the CLI's `--json` output: `{date, score, label,
+components, history[]}`. When the Cloudflare build lands, the scheduled Worker
+writes that same JSON shape and the Pages front end serves this `web/` directory
+unchanged.
+
 ## Running with live data
 
 `--source live` fetches:

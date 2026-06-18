@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ASX Mood Index</title>
+  <meta name="description" content="A Fear & Greed-style market-sentiment gauge for the Australian market." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <h1>ASX Mood Index</h1>
+      <p class="tagline">A Fear &amp; Greed&ndash;style sentiment gauge for the Australian market.
+        A measure of market <em>mood</em>, not a trading signal.</p>
+    </header>
+
+    <section class="gauge-card" aria-label="Current mood gauge">
+      <svg id="gauge" viewBox="0 0 400 250" role="img" aria-labelledby="gauge-score gauge-label"></svg>
+      <div class="gauge-readout">
+        <div id="gauge-score" class="score">&ndash;&ndash;</div>
+        <div id="gauge-label" class="label">Loading&hellip;</div>
+        <div id="gauge-date" class="asof"></div>
+      </div>
+    </section>
+
+    <section class="components-card" aria-label="Component breakdown">
+      <h2>Components</h2>
+      <div id="components" class="components"></div>
+    </section>
+
+    <section class="history-card" aria-label="Trailing history">
+      <h2>Trailing history</h2>
+      <svg id="history" viewBox="0 0 820 260" role="img" aria-label="Index history chart"></svg>
+      <div id="history-meta" class="history-meta"></div>
+    </section>
+
+    <footer class="foot">
+      <p id="source-note"></p>
+      <p class="disclaimer">Sentiment gauge only &mdash; not financial advice and not a buy/sell or timing
+        signal. Data: RBA (AUD/USD, 10y CGS yield) and a market index source; see methodology.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
