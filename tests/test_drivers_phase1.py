@@ -7,8 +7,9 @@ from asx_drivers.data import asic, fred, synthetic
 
 def test_asic_url_templates_format_with_date():
     urls = fetch_asic.urls_for(pd.Timestamp("2024-06-10"))
-    assert any("RR20240610-001-SSDailyAggShortPos.csv" in u for u in urls)
-    assert any("/2024/06/" in u for u in urls)  # year/month pattern present
+    assert urls == [
+        "https://download.asic.gov.au/short-selling/RR20240610-001-SSDailyAggShortPos.csv"
+    ]
 
 
 def test_monthly_score_forward_fills_onto_daily_grid():
