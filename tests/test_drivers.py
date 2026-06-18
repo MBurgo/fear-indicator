@@ -30,7 +30,7 @@ def test_credit_risk_inverts_in_composite():
     n = 320
     base = {
         "audusd": _series(0.72 + np.cumsum(rng.normal(0, 0.001, n))),
-        "gold": _series(1800 + np.cumsum(rng.normal(0, 1, n))),
+        "commodity": _series(85 + np.cumsum(rng.normal(0, 0.2, n))),
         "cgs_10y_yield": _series(np.full(n, 4.0) + rng.normal(0, 0.01, n)),
         "cgs_2y_yield": _series(np.full(n, 3.2) + rng.normal(0, 0.01, n)),
         "hy_oas": _series(np.linspace(3.0, 8.0, n)),  # steadily widening = fear

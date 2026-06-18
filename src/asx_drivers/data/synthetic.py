@@ -30,9 +30,9 @@ def make_inputs(
     aud_ret = 0.0006 * np.diff(np.concatenate([[risk[0]], risk])) + rng.normal(0, 0.003, n_days)
     audusd = pd.Series(0.72 * np.exp(np.cumsum(aud_ret)), index=idx, name="audusd")
 
-    # Gold: mild safe-haven + trend; partial negative correlation to risk.
-    gold_ret = -0.0004 * np.diff(np.concatenate([[risk[0]], risk])) + 0.0002 + rng.normal(0, 0.006, n_days)
-    gold = pd.Series(1800 * np.exp(np.cumsum(gold_ret)), index=idx, name="gold")
+    # Commodity (Brent-like): procyclical - rises with risk-on, falls in risk-off.
+    cmdty_ret = 0.0010 * np.diff(np.concatenate([[risk[0]], risk])) + rng.normal(0, 0.008, n_days)
+    commodity = pd.Series(85 * np.exp(np.cumsum(cmdty_ret)), index=idx, name="commodity")
 
     # 10y CGS yield: mean-reverting ~4%, falls in risk-off (flight to safety).
     y10 = np.empty(n_days)
@@ -55,7 +55,7 @@ def make_inputs(
 
     return {
         "audusd": audusd,
-        "gold": gold,
+        "commodity": commodity,
         "cgs_10y_yield": cgs_10y,
         "cgs_2y_yield": cgs_2y,
         "hy_oas": hy_oas,

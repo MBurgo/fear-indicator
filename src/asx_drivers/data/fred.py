@@ -7,11 +7,18 @@ free consumer-finance endpoints the ASX Mood Index struggled with).
 
 Series used:
   BAMLH0A0HYM2        ICE BofA US High Yield Option-Adjusted Spread (daily, %)
-  GOLDPMGBD228NLBM    Gold price, London PM fix, USD/oz (daily)
+  DCOILBRENTEU        Crude Oil Brent (daily, USD/bbl, EIA) - Phase 0 commodity leg
+
+Phase 0 commodity note: gold's free daily FRED series (the LBMA fixings) was
+discontinued over licensing, so the daily commodity leg uses Brent crude, which
+is EIA data (US-government public domain, reliably hosted, cleanest possible
+terms) and a liquid global-commodity barometer. The Phase 1 export basket (iron
+ore, coal, gold, LNG from the World Bank) replaces this proxy.
 
 Redistribution: FRED is free to use; individual series carry their source's
-terms. Confirm commercial-display terms for the ICE BofA series before launch and
-attribute appropriately. None of these is an ASX/S&P-licensed price product.
+terms. EIA energy series are public domain. Confirm commercial-display terms for
+the ICE BofA series before launch and attribute appropriately. None of these is
+an ASX/S&P-licensed price product.
 """
 
 from __future__ import annotations
@@ -24,7 +31,9 @@ import requests
 FREDGRAPH_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 
 HY_OAS_SERIES_ID = "BAMLH0A0HYM2"
-GOLD_SERIES_ID = "GOLDPMGBD228NLBM"
+# Daily commodity series (EIA, public domain). Brent primary, WTI fallback.
+BRENT_SERIES_ID = "DCOILBRENTEU"
+WTI_SERIES_ID = "DCOILWTICO"
 
 _TIMEOUT = 30
 _HEADERS = {"User-Agent": "asx-drivers-index/0.1"}
@@ -74,6 +83,20 @@ def load_hy_oas(text: str | None = None) -> pd.Series:
     return load_series(HY_OAS_SERIES_ID, text).rename("hy_oas")
 
 
-def load_gold(text: str | None = None) -> pd.Series:
-    """Gold price, London PM fix, USD/oz."""
-    return load_series(GOLD_SERIES_ID, text).rename("gold")
+def load_commodity(text: str | None = None) -> pd.Series:
+    """Daily commodity leg for Phase 0 (Brent crude, WTI fallback).
+
+    A liquid daily global-commodity proxy; replaced by the Phase 1 export basket.
+    Trying two EIA series guards against any single series id going dead.
+    """
+    if text is not None:
+        return parse_fredgraph_csv(text).rename("commodity")
+    errors = []
+    for series_id in (BRENT_SERIES_ID, WTI_SERIES_ID):
+        try:
+            return load_series(series_id).rename("commodity")
+        except Exception as exc:  # noqa: BLE001 - aggregate and report
+            errors.append(f"{series_id}: {exc}")
+    raise RuntimeError(
+        "Could not load a commodity series from FRED -> " + " | ".join(errors)
+    )

@@ -18,7 +18,7 @@ Four fully-daily, free, keyless components through the shared engine:
 
 | Component | Raw signal | Direction | Source |
 |---|---|---|---|
-| Commodity complex | Gold 63-day momentum (Phase 0 leg) | high = tailwind | FRED gold |
+| Commodity complex | Brent crude 63-day momentum (Phase 0 proxy) | high = tailwind | FRED `DCOILBRENTEU` (EIA) |
 | AUD risk flow | AUD/USD 20-day momentum | high = tailwind | RBA F11.1 |
 | Yield-curve slope | 10y − 2y CGS yield | high = tailwind | RBA F2 |
 | Global credit risk | US high-yield spread level | high = headwind (inverted) | FRED `BAMLH0A0HYM2` |

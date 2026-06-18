@@ -47,7 +47,7 @@ def _load_live() -> dict[str, pd.Series]:
 
     return {
         "audusd": rba.load_audusd(),
-        "gold": fred.load_gold(),
+        "commodity": fred.load_commodity(),
         "cgs_10y_yield": rba.load_cgs_10y_yield(),
         "cgs_2y_yield": rba.load_cgs_2y_yield(),
         "hy_oas": fred.load_hy_oas(),
@@ -66,7 +66,7 @@ def run(args: argparse.Namespace) -> int:
 
     scores, composite_idx = idx_mod.build(
         df["audusd"],
-        df["gold"],
+        df["commodity"],
         df["cgs_10y_yield"],
         df["cgs_2y_yield"],
         df["hy_oas"],

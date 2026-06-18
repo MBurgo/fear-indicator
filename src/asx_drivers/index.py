@@ -22,7 +22,7 @@ PHASE0_ORDER = ["commodity", "aud", "curve_slope", "credit_risk"]
 
 def raw_signals(
     audusd: pd.Series,
-    gold: pd.Series,
+    commodity: pd.Series,
     cgs_10y_yield: pd.Series,
     cgs_2y_yield: pd.Series,
     hy_oas: pd.Series,
@@ -30,7 +30,7 @@ def raw_signals(
     """Compute the four Phase 0 raw signals on an aligned index."""
     return pd.DataFrame(
         {
-            "commodity": components.commodity_momentum_raw(gold),
+            "commodity": components.commodity_momentum_raw(commodity),
             "aud": components.aud_momentum_raw(audusd),
             "curve_slope": components.curve_slope_raw(cgs_10y_yield, cgs_2y_yield),
             "credit_risk": components.credit_spread_raw(hy_oas),
@@ -57,7 +57,7 @@ def component_scores(
 
 def build(
     audusd: pd.Series,
-    gold: pd.Series,
+    commodity: pd.Series,
     cgs_10y_yield: pd.Series,
     cgs_2y_yield: pd.Series,
     hy_oas: pd.Series,
@@ -65,7 +65,7 @@ def build(
     min_periods: int | None = None,
 ) -> tuple[pd.DataFrame, pd.Series]:
     """End-to-end Phase 0: aligned inputs -> (component_scores, composite_index)."""
-    raws = raw_signals(audusd, gold, cgs_10y_yield, cgs_2y_yield, hy_oas)
+    raws = raw_signals(audusd, commodity, cgs_10y_yield, cgs_2y_yield, hy_oas)
     scores = component_scores(raws, window=window, min_periods=min_periods)
     idx = composite.composite(scores)
     return scores, idx
