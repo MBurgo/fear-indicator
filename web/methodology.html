@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Methodology — ASX Drivers Index</title>
+  <meta name="description" content="How the ASX Drivers Index is built: components, calculation, data sources and limitations." />
+  <link rel="stylesheet" href="styles.css?v=4" />
+</head>
+<body>
+  <main class="wrap method">
+    <header class="head">
+      <h1>Methodology</h1>
+      <p class="tagline">How the ASX Drivers Index is built, what goes into it, and what it can and can&rsquo;t tell you.</p>
+      <p class="head-links"><a href="index.html">&larr; Back to the gauge</a></p>
+    </header>
+
+    <section>
+      <h2>What it is</h2>
+      <p>The ASX Drivers Index is a single 0&ndash;100 reading of whether the external forces that
+        drive Australian shares are, on balance, a <strong>tailwind</strong> or a
+        <strong>headwind</strong>. The Australian market is heavily concentrated in mining and
+        banking, so a handful of outside forces &mdash; commodity prices, the Australian dollar,
+        the interest-rate curve, global credit conditions and how heavily the market is
+        positioned short &mdash; explain a large share of what moves it.</p>
+      <p>It is a <strong>market-conditions gauge, not advice and not a forecast</strong>. It
+        measures the climate for Australian equities, not their prices, and it deliberately uses
+        no licensed share-price data &mdash; every input is free and official.</p>
+    </section>
+
+    <section>
+      <h2>The five components</h2>
+      <table class="method-table">
+        <thead>
+          <tr><th>Component</th><th>Raw signal</th><th>Cadence</th><th>High score means</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Commodity complex</td><td>Weighted export basket (iron ore, coal, LNG, aluminium, copper, nickel), 3-month momentum</td><td>Monthly</td><td>Tailwind</td><td>IMF commodity series via FRED</td></tr>
+          <tr><td>AUD risk flow</td><td>AUD/USD 20-day momentum</td><td>Daily</td><td>Tailwind</td><td>RBA table F11.1</td></tr>
+          <tr><td>Yield-curve slope</td><td>10-year minus 2-year Commonwealth Government bond yield</td><td>Daily</td><td>Tailwind</td><td>RBA table F2</td></tr>
+          <tr><td>Global credit risk</td><td>US high-yield credit spread (level)</td><td>Daily</td><td>Headwind (inverted)</td><td>FRED (ICE BofA OAS)</td></tr>
+          <tr><td>Short positioning</td><td>Market-wide aggregate short interest (% on issue)</td><td>Daily, 4-day lag</td><td>Headwind (inverted)</td><td>ASIC short-position reports</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Why each one belongs</h3>
+      <ul class="factors">
+        <li><strong>Commodity complex.</strong> Resources are about a quarter of the ASX and the
+          swing factor in its earnings; the prices of Australia&rsquo;s main export earners move
+          the miners and the nation&rsquo;s terms of trade. Iron ore and coal also carry the
+          Chinese steel-demand signal, which is why China is not a separate component.</li>
+        <li><strong>The Australian dollar.</strong> A textbook risk-on / risk-off currency: it
+          rises when global investors want Australian assets and falls when they retreat.</li>
+        <li><strong>Yield-curve slope.</strong> The 10y&ndash;2y gap drives bank net-interest
+          margins (financials are the ASX&rsquo;s other large bloc) and is a long-standing lead on
+          the economic cycle; an inverted curve is a classic recession warning.</li>
+        <li><strong>Global credit risk.</strong> Australian equities are highly geared to global
+          risk appetite; the US high-yield spread is the cleanest, most liquid measure of it. It
+          also recovers the &ldquo;junk-bond demand&rdquo; dimension Australia lacks a local
+          market for. (The VIX is deliberately avoided &mdash; it is a licensed product.)</li>
+        <li><strong>Short positioning.</strong> Aggregate short interest is the one input that
+          measures how investors are <em>actually</em> positioned on ASX stocks rather than
+          inferring it. It is positioning, not a forecast &mdash; crowded shorts can precede
+          squeezes &mdash; so it is read as one input, not a prediction.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>How the score is built</h2>
+      <p>Every component passes through the same engine, so no raw value enters the index directly:</p>
+      <ol class="steps">
+        <li>Compute the component&rsquo;s raw signal.</li>
+        <li>Convert it to a <strong>z-score</strong> against its own trailing history (252 trading
+          days for daily inputs, 36 months for the monthly basket), so each input is always
+          measured relative to its own normal range, not an absolute threshold.</li>
+        <li>Clip the z-score to &plusmn;3 and map linearly to 0&ndash;100 (a z of 0 &rarr; 50).</li>
+        <li>Invert the headwind-positive inputs (credit risk, short positioning) so that, for
+          every component, a high score means &ldquo;tailwind&rdquo;.</li>
+        <li>Average the five component scores with equal weight to form the composite.</li>
+      </ol>
+      <p>Equal weighting is the defensible default: it makes no claim that any one signal is more
+        predictive. Several inputs (commodities, the AUD, credit) share a common global risk
+        factor, so the effective weighting is not perfectly even &mdash; that is acknowledged
+        rather than tuned away.</p>
+
+      <h3>The headline scale</h3>
+      <p>Averaging five components compresses the composite toward the middle, so the headline is
+        shown as the composite&rsquo;s <strong>percentile against its own history</strong> rather
+        than the raw average. <strong>50 is a typical reading</strong>; a low number marks an
+        unusually strong headwind and a high number an unusually strong tailwind. The bands are
+        even &mdash; Strong Headwind (0&ndash;10), Headwind (10&ndash;30), Neutral (30&ndash;70),
+        Tailwind (70&ndash;90), Strong Tailwind (90&ndash;100) &mdash; and a small amount of
+        hysteresis stops the label flickering when the reading hovers on a boundary. The five
+        component bars stay on their own raw 0&ndash;100 scale.</p>
+
+      <h3>Mixed-frequency handling</h3>
+      <p>The index refreshes daily, but the commodity basket is monthly and short positioning is
+        published four business days late. Each component is normalised at its native frequency
+        and its score is then forward-filled onto the daily grid, stamped by the date the data was
+        actually available (monthly prices lagged about 45 days, ASIC shorts by four business
+        days). This prevents the index from ever using information it could not have had at the
+        time.</p>
+    </section>
+
+    <section>
+      <h2>Data sources &amp; attribution</h2>
+      <ul class="factors">
+        <li><strong>Reserve Bank of Australia</strong> &mdash; AUD/USD (F11.1) and Commonwealth
+          Government bond yields (F2). Official, free, redistribution-clean.</li>
+        <li><strong>FRED (Federal Reserve Bank of St. Louis)</strong> &mdash; the US high-yield
+          credit spread (ICE BofA) and the IMF commodity price series. Free; source terms apply
+          per series.</li>
+        <li><strong>ASIC</strong> &mdash; aggregated short-position reports. Official government
+          data.</li>
+      </ul>
+      <p>None of these is a licensed exchange share-price or index product. Windows and parameters
+        are published here for transparency and are of our own choosing.</p>
+    </section>
+
+    <section>
+      <h2>Limitations</h2>
+      <ul class="factors">
+        <li><strong>It is indirect.</strong> It reads the climate for Australian shares from their
+          drivers, not from share prices. In an idiosyncratic local episode it can lag the market.</li>
+        <li><strong>Mixed cadence.</strong> A daily core with a monthly commodity leg and a
+          four-day-lagged short leg; the gauge moves at a blended speed.</li>
+        <li><strong>Correlated inputs.</strong> Commodities, the AUD and global credit share a
+          common risk factor, so equal weighting overstates their independence.</li>
+        <li><strong>Relative, not absolute.</strong> The headline is a percentile against the
+          available history window, so the same conditions can read slightly differently as the
+          window grows.</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <p class="disclaimer"><strong>Not financial advice.</strong> This is a market-conditions
+        gauge for general information only &mdash; not a recommendation and not a buy, sell or
+        timing signal. It does not account for your objectives, financial situation or needs.</p>
+    </footer>
+  </main>
+</body>
+</html>
