@@ -72,6 +72,19 @@ unchanged.
 - **AUD/USD** from RBA table F11.1 — `data/rba.py`
 - **10y CGS yield** from RBA table F2 — `data/rba.py`
 
+**If the free APIs are blocked** (Stooq now serves a JavaScript anti-bot page and
+Yahoo rate-limits with HTTP 429), download an `^AXJO` daily CSV in your browser
+and pass it directly — the most reliable path:
+
+```bash
+# Yahoo: finance.yahoo.com/quote/%5EAXJO/history -> Download
+# (or Stooq's site download). Then:
+PYTHONPATH=src python -m asx_mood.cli --source live --xjo-csv ~/Downloads/^AXJO.csv --json web/data.json
+```
+
+The CSV parser accepts both Yahoo (`Date,...,Close,Adj Close,...`) and Stooq
+(`Date,...,Close,Volume`) download formats.
+
 In a **restricted cloud session** these hosts must be on the environment's network
 egress allowlist, otherwise the fetch returns HTTP 403:
 
