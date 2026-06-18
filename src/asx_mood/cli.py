@@ -23,11 +23,11 @@ from .composite import latest_reading
 from .data import align
 
 
-def _load_live() -> dict[str, pd.Series]:
+def _load_live(xjo_source: str = "auto") -> dict[str, pd.Series]:
     from .data import rba, xjo
 
     return {
-        "xjo_close": xjo.load_xjo_close(source="stooq"),
+        "xjo_close": xjo.load_xjo_close(source=xjo_source),
         "audusd": rba.load_audusd(),
         "cgs_10y_yield": rba.load_cgs_10y_yield(),
     }
@@ -40,7 +40,11 @@ def _load_synthetic() -> dict[str, pd.Series]:
 
 
 def run(args: argparse.Namespace) -> int:
-    frames = _load_synthetic() if args.source == "synthetic" else _load_live()
+    frames = (
+        _load_synthetic()
+        if args.source == "synthetic"
+        else _load_live(args.xjo_source)
+    )
     df = align(frames).dropna()
 
     scores, composite_idx = idx_mod.build(
@@ -86,6 +90,13 @@ def main(argv: list[str] | None = None) -> int:
         choices=["synthetic", "live"],
         default="synthetic",
         help="synthetic (offline demo) or live (fetch RBA + free XJO)",
+    )
+    p.add_argument(
+        "--xjo-source",
+        dest="xjo_source",
+        choices=["auto", "stooq", "yahoo"],
+        default="auto",
+        help="free XJO source for live runs (auto tries stooq then yahoo)",
     )
     p.add_argument("--window", type=int, default=252, help="normalisation window (days)")
     p.add_argument(
