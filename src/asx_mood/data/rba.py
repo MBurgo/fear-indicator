@@ -20,8 +20,9 @@ F11_URL = "https://www.rba.gov.au/statistics/tables/csv/f11.1-data.csv"
 F2_URL = "https://www.rba.gov.au/statistics/tables/csv/f2-data.csv"
 
 AUDUSD_SERIES_ID = "FXRUSD"
-CGS_10Y_SERIES_ID = "FCMYGBAG10"
-CGS_2Y_SERIES_ID = "FCMYGBAG2"
+# RBA F2 daily CGS yields use a trailing 'D' (daily) suffix.
+CGS_10Y_SERIES_ID = "FCMYGBAG10D"
+CGS_2Y_SERIES_ID = "FCMYGBAG2D"
 
 _TIMEOUT = 30
 
