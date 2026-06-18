@@ -94,7 +94,9 @@ def fetch_range(
     days = pd.bdate_range(start, end)
     saved = skipped = missed = 0
     consecutive_miss = 0
-    any_success = False
+    # If files already exist we know the URL pattern works, so don't early-abort
+    # on a resumable top-up (the remaining dates are the known-hard ones).
+    any_success = bool(list(out.glob("RR*SSDailyAggShortPos.csv")))
     last_tried = ""
 
     for date in days:
