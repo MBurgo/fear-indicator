@@ -20,7 +20,7 @@ import pandas as pd
 from . import TAGLINE, TITLE
 from . import index as idx_mod
 from .data import align
-from asx_mood.composite import latest_reading
+from asx_mood.composite import DRIVERS_LABELS, calibrate_band_edges, latest_reading
 
 COMPONENT_LABELS = {
     "commodity": "Commodity complex",
@@ -33,8 +33,11 @@ COMPONENT_LABELS = {
 # Daily series that must align onto a common calendar before the engine runs.
 DAILY_KEYS = ["audusd", "cgs_10y_yield", "cgs_2y_yield", "hy_oas"]
 
-# This is a conditions gauge, so re-label the shared fear/greed bands as
-# headwind/tailwind for an Australian-investor audience.
+# Thresholds (component score) for calling a component a tailwind / headwind.
+TAILWIND_AT = 55.0
+HEADWIND_AT = 45.0
+
+# Retained for the legacy --fixed-bands path only.
 LABEL_MAP = {
     "Extreme Fear": "Strong Headwind",
     "Fear": "Headwind",
@@ -75,6 +78,18 @@ def _load_synthetic() -> dict[str, object]:
     return make_inputs()
 
 
+def divergence_summary(components: dict[str, float]) -> str:
+    """A one-line plain-English read of which drivers help vs hurt."""
+    tail = [COMPONENT_LABELS.get(k, k) for k, v in components.items() if v >= TAILWIND_AT]
+    head = [COMPONENT_LABELS.get(k, k) for k, v in components.items() if v <= HEADWIND_AT]
+    parts = []
+    if tail:
+        parts.append("Tailwinds: " + ", ".join(tail))
+    if head:
+        parts.append("Headwinds: " + ", ".join(head))
+    return ". ".join(parts) if parts else "Drivers are broadly balanced."
+
+
 def run(args: argparse.Namespace) -> int:
     frames = _load_synthetic() if args.source == "synthetic" else _load_live(args.asic_dir)
 
@@ -91,8 +106,18 @@ def run(args: argparse.Namespace) -> int:
         min_periods=args.min_periods,
     )
 
-    reading = latest_reading(scores, composite_idx, calibrate=not args.fixed_bands)
-    label = LABEL_MAP.get(reading.label, reading.label)
+    # Stable, distribution-calibrated band edges with hysteresis (preferred), or
+    # the spec's fixed 0-100 bands via --fixed-bands.
+    edges = calibrate_band_edges(composite_idx)
+    if args.fixed_bands:
+        reading = latest_reading(scores, composite_idx, calibrate=False)
+        label = LABEL_MAP.get(reading.label, reading.label)
+    else:
+        reading = latest_reading(
+            scores, composite_idx, edges=edges, names=DRIVERS_LABELS
+        )
+        label = reading.label
+    summary = divergence_summary(reading.components)
 
     print(f"\n  {TITLE} - {reading.date}")
     print(f"  {'=' * 38}")
@@ -101,6 +126,8 @@ def run(args: argparse.Namespace) -> int:
     for name, val in reading.components.items():
         bar = "#" * int(round(val / 5))
         print(f"  {COMPONENT_LABELS.get(name, name):<20} {val:>5.1f}  {bar}")
+    print(f"  {'-' * 38}")
+    print(f"  {summary}")
     print()
 
     if args.json:
@@ -110,6 +137,9 @@ def run(args: argparse.Namespace) -> int:
         payload["tagline"] = TAGLINE
         payload["lowLabel"] = "Headwind"
         payload["highLabel"] = "Tailwind"
+        payload["summary"] = summary
+        payload["bandEdges"] = edges
+        payload["bandLabels"] = DRIVERS_LABELS
         payload["history"] = [
             {"date": d.strftime("%Y-%m-%d"), "score": round(float(v), 1)}
             for d, v in composite_idx.dropna().items()

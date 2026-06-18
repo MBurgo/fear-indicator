@@ -22,6 +22,8 @@
         <div id="gauge-label" class="label">Loading&hellip;</div>
         <div id="gauge-date" class="asof"></div>
       </div>
+      <div id="band-legend" class="band-legend"></div>
+      <p id="summary" class="summary"></p>
     </section>
 
     <section class="components-card" aria-label="Component breakdown">
@@ -35,10 +37,23 @@
       <div id="history-meta" class="history-meta"></div>
     </section>
 
+    <section class="about-card" aria-label="What this measures">
+      <h2>What this measures</h2>
+      <p>This gauge reads the external forces that drive Australian shares &mdash; export
+        commodity prices, the Australian dollar, the bond-yield curve, global credit
+        conditions and how heavily the market is positioned short &mdash; and asks whether,
+        taken together, they are a <strong>tailwind</strong> or a <strong>headwind</strong>.
+        Each input is scored against its own recent history; the bands above are calibrated
+        from the index&rsquo;s own range, so &ldquo;neutral&rdquo; means typical, not a flat 50.</p>
+      <p>It measures <em>conditions</em>, not share prices, and it makes no forecast.</p>
+    </section>
+
     <footer class="foot">
       <p id="source-note"></p>
-      <p class="disclaimer">Sentiment gauge only &mdash; not financial advice and not a buy/sell or timing
-        signal. Data: RBA (AUD/USD, 10y CGS yield) and a market index source; see methodology.</p>
+      <p class="disclaimer"><strong>Not financial advice.</strong> This is a market-conditions
+        gauge for general information only &mdash; not a recommendation and not a buy, sell or
+        timing signal. Sources: RBA (AUD/USD, Commonwealth Government bond yields), FRED
+        (US high-yield spread, IMF commodity prices) and ASIC (aggregate short positions).</p>
     </footer>
   </main>
 

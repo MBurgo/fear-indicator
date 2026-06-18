@@ -47,3 +47,31 @@ def test_calibrated_labels_span_the_extremes():
     series = pd.Series(50 + 4 * pd.Series(range(500)).sub(250).div(250).values, index=idx)
     labels = composite.label_calibrated(series)
     assert set(labels.dropna().unique()) >= {"Extreme Fear", "Neutral", "Extreme Greed"}
+
+
+def test_calibrate_band_edges_ascending_within_history():
+    import numpy as np
+
+    s = pd.Series(np.linspace(30, 70, 500))
+    edges = composite.calibrate_band_edges(s)
+    assert edges == sorted(edges)
+    assert 30 <= edges[0] and edges[-1] <= 70
+
+
+def test_label_hysteresis_avoids_flicker():
+    edges = [40, 45, 55, 60]
+    idx = pd.date_range("2020-01-01", periods=6)
+    series = pd.Series([54.0, 56.0, 54.0, 56.0, 54.0, 56.0], index=idx)
+    labels = composite.label_series_with_edges(series, edges, composite.DRIVERS_LABELS, margin=2.0)
+    # Oscillating <2 points across the 55 edge must not flip the label.
+    assert labels.iloc[0] == "Neutral"
+    assert labels.nunique() == 1
+
+
+def test_label_changes_on_decisive_move():
+    edges = [40, 45, 55, 60]
+    idx = pd.date_range("2020-01-01", periods=3)
+    series = pd.Series([50.0, 58.0, 65.0], index=idx)
+    labels = composite.label_series_with_edges(series, edges, composite.DRIVERS_LABELS, margin=1.0)
+    assert labels.iloc[0] == "Neutral"
+    assert labels.iloc[-1] == "Strong Tailwind"

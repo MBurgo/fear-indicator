@@ -13,6 +13,20 @@
   "tagline": "Are the forces that drive Australian shares - commodities, the dollar, rates and global credit - a tailwind or a headwind? A conditions gauge for AU investors, not a trading signal.",
   "lowLabel": "Headwind",
   "highLabel": "Tailwind",
+  "summary": "Tailwinds: AUD risk flow, Yield-curve slope. Headwinds: Global credit risk, Short positioning",
+  "bandEdges": [
+    39.7,
+    44.7,
+    53.8,
+    59.4
+  ],
+  "bandLabels": [
+    "Strong Headwind",
+    "Headwind",
+    "Neutral",
+    "Tailwind",
+    "Strong Tailwind"
+  ],
   "history": [
     {
       "date": "2022-04-15",

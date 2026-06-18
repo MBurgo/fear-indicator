@@ -73,6 +73,16 @@ availability (monthly prices lagged ~45 days, ASIC shorts by 4 business days) to
 avoid look-ahead. The composite requires every active component present, so the
 headline always uses the full set (early history is trimmed during warm-up).
 
+**Display bands & labels:** because averaging compresses the composite toward 50,
+the Strong Headwind / Headwind / Neutral / Tailwind / Strong Tailwind band *edges*
+are calibrated once from the index's own historical distribution (the 10/30/70/90
+percentiles) and then applied as fixed score cutoffs — so "score X = label Y" is a
+stable, publishable mapping and a past day's label never changes retroactively.
+Light hysteresis stops the label flickering when the score hovers on a boundary.
+The edges, labels and a plain-English tailwind/headwind summary are written into
+the JSON and rendered by the front end (gauge bands, legend, callout). Pass
+`--fixed-bands` for the spec's static 0–100 cutoffs instead.
+
 ---
 
 # ASX Mood Index *(shelved)*

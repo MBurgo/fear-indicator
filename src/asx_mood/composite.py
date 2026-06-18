@@ -32,6 +32,72 @@ PERCENTILE_BANDS = [
     (1.01, "Extreme Greed"),  # 1.01 so the top percentile is inclusive
 ]
 
+# Quantiles used to calibrate fixed band EDGES from the index's own history.
+CALIBRATION_QUANTILES = (0.10, 0.30, 0.70, 0.90)
+# Five label sets sharing the same edges; pick per product.
+MOOD_LABELS = ["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
+DRIVERS_LABELS = ["Strong Headwind", "Headwind", "Neutral", "Tailwind", "Strong Tailwind"]
+
+
+def calibrate_band_edges(
+    series: pd.Series, quantiles: tuple[float, ...] = CALIBRATION_QUANTILES
+) -> list[float]:
+    """Calibrate four ascending score thresholds from the index's own history.
+
+    Unlike rank-against-all-history labelling, these edges are computed ONCE and
+    then applied as fixed score cutoffs, so "score X = label Y" is a stable,
+    publishable mapping and a past day's label never changes retroactively. Still
+    distribution-aware, so it preserves the band-compression fix. Falls back to
+    the spec's fixed edges when there is too little history to calibrate.
+    """
+    s = series.dropna()
+    if len(s) < 60:
+        return [25.0, 45.0, 55.0, 75.0]
+    edges = [round(float(s.quantile(q)), 1) for q in quantiles]
+    # Guard against ties producing non-ascending edges.
+    for i in range(1, len(edges)):
+        if edges[i] <= edges[i - 1]:
+            edges[i] = edges[i - 1] + 0.1
+    return edges
+
+
+def _band_index(value: float, edges: list[float]) -> int:
+    return sum(value >= e for e in edges)
+
+
+def label_with_edges(score: float, edges: list[float], names: list[str]) -> str:
+    """Label a single score using fixed band edges."""
+    return names[_band_index(score, edges)]
+
+
+def label_series_with_edges(
+    series: pd.Series,
+    edges: list[float],
+    names: list[str],
+    margin: float = 1.0,
+) -> pd.Series:
+    """Label a series with fixed edges plus hysteresis to avoid boundary flicker.
+
+    The label only changes once the score moves ``margin`` points *past* the band
+    boundary it is leaving, so a value hovering on a cutoff does not flip the
+    label day to day.
+    """
+    labels = pd.Series(index=series.index, dtype="object")
+    current: int | None = None
+    for ts, value in series.items():
+        if pd.isna(value):
+            labels[ts] = None
+            continue
+        idx = _band_index(value, edges)
+        if current is None:
+            current = idx
+        elif idx > current and value >= edges[current] + margin:
+            current = idx
+        elif idx < current and value < edges[current - 1] - margin:
+            current = idx
+        labels[ts] = names[current]
+    return labels
+
 
 def composite(scores: pd.DataFrame, min_components: int | None = None) -> pd.Series:
     """Equal-weighted mean of the component scores, row by row (spec section 2).
@@ -91,15 +157,27 @@ class Reading:
 
 
 def latest_reading(
-    scores: pd.DataFrame, index: pd.Series, calibrate: bool = True
+    scores: pd.DataFrame,
+    index: pd.Series,
+    calibrate: bool = True,
+    edges: list[float] | None = None,
+    names: list[str] | None = None,
+    margin: float = 1.0,
 ) -> Reading:
-    """Build the most recent valid Reading from component scores and composite."""
+    """Build the most recent valid Reading from component scores and composite.
+
+    If ``edges`` and ``names`` are given, labels use stable calibrated edges with
+    hysteresis (preferred for display). Otherwise falls back to ``calibrate``
+    (rank-based) or fixed bands.
+    """
     valid = index.dropna()
     if valid.empty:
         raise ValueError("No valid composite values - not enough history yet.")
     date = valid.index[-1]
     score = float(valid.iloc[-1])
-    if calibrate:
+    if edges is not None and names is not None:
+        label = str(label_series_with_edges(index, edges, names, margin).loc[date])
+    elif calibrate:
         label = str(label_calibrated(index).loc[date])
     else:
         label = label_fixed(score)
