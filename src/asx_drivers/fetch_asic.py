@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 
 import pandas as pd
@@ -28,9 +29,8 @@ import requests
 
 from .data import asic
 
-# Candidate URL templates, tried in order per date. {d}=YYYYMMDD, {Y}=YYYY, {M}=MM.
+# Confirmed ASIC download URL (flat short-selling path). {d}=YYYYMMDD.
 URL_TEMPLATES = (
-    "https://asic.gov.au/Reports/Daily/{Y}/{M}/RR{d}-001-SSDailyAggShortPos.csv",
     "https://download.asic.gov.au/short-selling/RR{d}-001-SSDailyAggShortPos.csv",
 )
 FILENAME_TMPL = "RR{d}-001-SSDailyAggShortPos.csv"
@@ -46,7 +46,7 @@ _HEADERS = {
 
 def urls_for(date: pd.Timestamp) -> list[str]:
     d = date.strftime("%Y%m%d")
-    return [t.format(d=d, Y=date.strftime("%Y"), M=date.strftime("%m")) for t in URL_TEMPLATES]
+    return [t.format(d=d) for t in URL_TEMPLATES]
 
 
 _TRANSIENT_STATUS = {429, 500, 502, 503, 504}
@@ -67,18 +67,24 @@ def _get(url: str, attempts: int = 3) -> requests.Response | None:
     return None
 
 
-def _try_download(date: pd.Timestamp) -> bytes | None:
-    """Return file bytes for a date if any candidate URL yields a parseable file."""
+def _try_download(date: pd.Timestamp) -> tuple[bytes | None, str]:
+    """Return (file bytes, reason). bytes is None on failure; reason explains why."""
+    reasons = []
     for url in urls_for(date):
         resp = _get(url)
-        if resp is None or resp.status_code != 200 or not resp.content:
+        if resp is None:
+            reasons.append("no-response")
+            continue
+        if resp.status_code != 200 or not resp.content:
+            reasons.append(f"HTTP {resp.status_code}")
             continue
         try:
             asic.parse_aggregate_file(resp.content)  # validate it really is one
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
+            reasons.append(f"200-unparseable ({str(exc)[:40]})")
             continue
-        return resp.content
-    return None
+        return resp.content, "ok"
+    return None, "; ".join(reasons) or "fail"
 
 
 def fetch_range(
@@ -87,6 +93,7 @@ def fetch_range(
     out_dir: str | Path,
     delay: float = 0.2,
     abort_after: int = 12,
+    verbose: bool = False,
 ) -> int:
     """Download ASIC files across [start, end] into ``out_dir``. Returns count saved."""
     out = Path(out_dir)
@@ -98,6 +105,7 @@ def fetch_range(
     # on a resumable top-up (the remaining dates are the known-hard ones).
     any_success = bool(list(out.glob("RR*SSDailyAggShortPos.csv")))
     last_tried = ""
+    miss_reasons: Counter[str] = Counter()
 
     for date in days:
         dest = out / FILENAME_TMPL.format(d=date.strftime("%Y%m%d"))
@@ -105,7 +113,7 @@ def fetch_range(
             skipped += 1
             continue
         last_tried = urls_for(date)[0]
-        content = _try_download(date)
+        content, reason = _try_download(date)
         if content is not None:
             dest.write_bytes(content)
             saved += 1
@@ -114,20 +122,20 @@ def fetch_range(
         else:
             missed += 1
             consecutive_miss += 1
+            miss_reasons[reason.split(" (")[0]] += 1
+            if verbose:
+                print(f"  MISS {date.date()}: {reason}")
         if not any_success and consecutive_miss >= abort_after:
             print(
                 f"Aborting: the first {abort_after} downloads all failed - ASIC's "
-                f"URL pattern may have changed.\n  Tried e.g. {last_tried}\n  "
-                "Open https://asic.gov.au/regulatory-resources/markets/short-selling/ "
-                "short-position-reports-table/, copy one file's URL, and share it so "
-                "the template can be fixed."
+                f"URL pattern may have changed.\n  Tried e.g. {last_tried}"
             )
             return saved
         time.sleep(delay)
 
     print(f"saved {saved}, skipped {skipped} (already present), missed {missed} -> {out}")
-    if saved == 0 and skipped == 0:
-        print("  No files saved. Check the date range and your connection.")
+    if miss_reasons:
+        print(f"  miss reasons: {dict(miss_reasons)}")
     return saved
 
 
@@ -137,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--start", default=None, help="start date YYYY-MM-DD (default: ~2y before end)")
     p.add_argument("--end", default=None, help="end date YYYY-MM-DD (default: today - 4 business days)")
     p.add_argument("--delay", type=float, default=0.2, help="seconds between requests (politeness)")
+    p.add_argument("--verbose", action="store_true", help="print a reason for each missed date")
     args = p.parse_args(argv)
 
     # ASIC files appear ~4 business days after their reporting date.
@@ -147,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     start = pd.Timestamp(args.start) if args.start else end - pd.DateOffset(years=2)
     print(f"Fetching ASIC short-position files {start.date()} .. {end.date()} into {args.out}")
-    fetch_range(start, end, args.out, delay=args.delay)
+    fetch_range(start, end, args.out, delay=args.delay, verbose=args.verbose)
     return 0
 
 
