@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from asx_drivers import components, index
-from asx_drivers.data.fred import parse_fredgraph_csv
+from asx_drivers.data.fred import parse_fred_api_json, parse_fredgraph_csv
 
 
 def _series(values, start="2022-01-01"):
@@ -38,6 +38,19 @@ def test_credit_risk_inverts_in_composite():
     # With spreads at their widest vs the trailing year, the (inverted) credit
     # score should sit in the lower (headwind) half.
     assert scores["credit_risk"].iloc[-1] < 50
+
+
+def test_parse_fred_api_json():
+    payload = {
+        "observations": [
+            {"date": "2024-01-01", "value": "3.50"},
+            {"date": "2024-02-01", "value": "."},  # missing -> dropped
+            {"date": "2024-03-01", "value": "3.60"},
+        ]
+    }
+    s = parse_fred_api_json(payload, "BAMLH0A0HYM2")
+    assert list(s.round(2)) == [3.50, 3.60]
+    assert str(s.index[0].date()) == "2024-01-01"
 
 
 def test_parse_fredgraph_handles_missing_and_date_col_names():

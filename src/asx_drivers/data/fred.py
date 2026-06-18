@@ -24,12 +24,18 @@ an ASX/S&P-licensed price product.
 from __future__ import annotations
 
 import io
+import json
+import os
 import time
 
 import pandas as pd
 import requests
 
 FREDGRAPH_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
+# Official programmatic API. Used when FRED_API_KEY is set (e.g. in CI, where the
+# keyless fredgraph endpoint blocks datacenter IPs). Get a free key at
+# https://fredaccount.stlouisfed.org/apikeys
+FRED_API_URL = "https://api.stlouisfed.org/fred/series/observations"
 
 HY_OAS_SERIES_ID = "BAMLH0A0HYM2"
 # Daily commodity series (EIA, public domain). Brent primary, WTI fallback.
@@ -98,10 +104,41 @@ def parse_fredgraph_csv(text: str, series_id: str | None = None) -> pd.Series:
 
 
 def load_series(series_id: str, text: str | None = None) -> pd.Series:
-    """Load one FRED series by id (keyless). Pass ``text`` to parse offline."""
-    if text is None:
-        text = _get_text(FREDGRAPH_URL, params={"id": series_id})
-    return parse_fredgraph_csv(text, series_id)
+    """Load one FRED series by id. Pass ``text`` to parse a fredgraph CSV offline.
+
+    When ``FRED_API_KEY`` is set, fetches via the official API (reliable from CI,
+    where the keyless fredgraph endpoint blocks datacenter IPs); otherwise uses
+    the keyless fredgraph CSV (fine from a normal IP).
+    """
+    if text is not None:
+        return parse_fredgraph_csv(text, series_id)
+    api_key = os.environ.get("FRED_API_KEY")
+    if api_key:
+        body = _get_text(
+            FRED_API_URL,
+            params={"series_id": series_id, "api_key": api_key, "file_type": "json"},
+        )
+        return parse_fred_api_json(json.loads(body), series_id)
+    return parse_fredgraph_csv(_get_text(FREDGRAPH_URL, params={"id": series_id}), series_id)
+
+
+def parse_fred_api_json(payload: dict, series_id: str) -> pd.Series:
+    """Parse a FRED API observations JSON payload into a float Series."""
+    observations = payload.get("observations") or []
+    dates, values = [], []
+    for obs in observations:
+        value, date = obs.get("value"), obs.get("date")
+        if value in (".", "", None) or not date:
+            continue
+        try:
+            values.append(float(value))
+            dates.append(pd.to_datetime(date))
+        except (TypeError, ValueError):
+            continue
+    series = pd.Series(values, index=pd.DatetimeIndex(dates), name=series_id).sort_index()
+    if series.empty:
+        raise ValueError(f"FRED API returned no usable observations for {series_id}")
+    return series
 
 
 def load_hy_oas(text: str | None = None) -> pd.Series:

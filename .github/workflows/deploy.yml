@@ -48,6 +48,10 @@ jobs:
         run: asx-fetch-asic --out data/asic --start 2016-01-01
 
       - name: Compute index -> web/data.json
+        env:
+          # FRED's keyless graph endpoint blocks datacenter IPs, so CI uses the
+          # official API. Add a free key as a repo secret named FRED_API_KEY.
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: asx-drivers --source live --asic-dir data/asic --json web/data.json
 
       - name: Commit updated data
