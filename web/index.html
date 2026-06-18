@@ -3,87 +3,104 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ASX Mood Index</title>
-  <meta name="description" content="A Fear & Greed-style market-sentiment gauge for the Australian market." />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <title>ASX Drivers Index</title>
+  <meta name="description" content="A conditions gauge for the Australian market: are the forces that drive ASX shares a tailwind or a headwind?" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <main class="wrap">
     <header class="head">
-      <h1>ASX Mood Index</h1>
-      <p class="tagline">A Fear &amp; Greed&ndash;style sentiment gauge for the Australian market.
-        A measure of market <em>mood</em>, not a trading signal.</p>
-      <p class="head-links"><a href="methodology.html">How it&rsquo;s built &amp; why &rarr;</a></p>
+      <div class="head-main">
+        <h1>ASX Drivers Index</h1>
+        <p class="tagline">Are the forces that drive Australian shares &mdash; commodities, the
+          dollar, rates and global credit &mdash; a tailwind or a headwind? A conditions gauge for
+          AU investors, not a trading signal.</p>
+        <p class="head-links"><a href="methodology.html">How it&rsquo;s built &amp; why &rarr;</a></p>
+      </div>
+      <div class="head-aside">
+        <div class="asof-label mono">AS OF</div>
+        <div id="gauge-date" class="asof-date mono"></div>
+      </div>
     </header>
 
-    <section class="gauge-card" aria-label="Current mood gauge">
-      <svg id="gauge" viewBox="0 0 400 250" role="img" aria-labelledby="gauge-score gauge-label"></svg>
-      <div class="gauge-readout">
+    <section class="hero" aria-label="Current reading">
+      <div class="hero-gauge">
+        <svg id="gauge" viewBox="0 0 400 250" role="img" aria-labelledby="gauge-score gauge-label"></svg>
         <div id="gauge-score" class="score">&ndash;&ndash;</div>
         <div id="gauge-label" class="label">Loading&hellip;</div>
-        <div id="gauge-date" class="asof"></div>
-        <p id="band-description" class="band-desc"></p>
+        <div id="score-note" class="score-note mono"></div>
       </div>
-      <div id="band-legend" class="band-legend"></div>
-      <p id="summary" class="summary"></p>
+      <div class="hero-read">
+        <p id="band-description" class="hero-desc"></p>
+        <div id="band-bar" class="band-bar" aria-hidden="true"></div>
+        <div id="drivers" class="drivers"></div>
+      </div>
     </section>
 
-    <section class="components-card" aria-label="Component breakdown">
-      <h2>Components</h2>
-      <div id="components" class="components"></div>
-    </section>
+    <div class="grid-2">
+      <section class="components-card" aria-label="Component breakdown">
+        <div class="card-head">
+          <h2>Components</h2>
+          <span class="card-note mono">each 0&ndash;100 &middot; centred at 50</span>
+        </div>
+        <div id="components" class="components"></div>
+      </section>
 
-    <section class="history-card" aria-label="Trailing history">
-      <h2>Trailing history</h2>
-      <svg id="history" viewBox="0 0 820 260" role="img" aria-label="Index history chart"></svg>
-      <div id="history-meta" class="history-meta"></div>
-    </section>
+      <section class="history-card" aria-label="Trailing history">
+        <div class="card-head"><h2>Trailing history</h2></div>
+        <svg id="history" viewBox="0 0 820 260" role="img" aria-label="Index history chart"></svg>
+        <div id="history-meta" class="history-meta mono"></div>
+      </section>
+    </div>
 
-    <section class="about-card" aria-label="What this measures">
-      <h2>What this measures</h2>
-      <p>This gauge reads the external forces that drive Australian shares &mdash; export
-        commodity prices, the Australian dollar, the bond-yield curve, global credit
-        conditions and how heavily the market is positioned short &mdash; and asks whether,
-        taken together, they are a <strong>tailwind</strong> or a <strong>headwind</strong>.</p>
-      <p>Because the ASX is so concentrated in miners and banks, these forces explain much of
-        what moves it &mdash; and all five come from free, official sources, so no licensed
-        share-price data is needed. It measures <em>conditions</em>, not share prices, and
-        makes no forecast.</p>
-      <p>The headline number shows where today sits against the index&rsquo;s own history:
-        <strong>50 is typical</strong>, a low number marks an unusually strong headwind and a
-        high number an unusually strong tailwind. (The five component bars below stay on their
-        own 0&ndash;100 scale.)</p>
-
-      <h2>Why these five factors</h2>
-      <ul class="factors">
-        <li><strong>Commodity complex.</strong> Resources are about a quarter of the ASX and
-          the swing factor in its earnings; the prices of Australia&rsquo;s main export
-          earners &mdash; iron ore, coal, LNG and base metals &mdash; move the miners and the
-          nation&rsquo;s terms of trade.</li>
-        <li><strong>The Australian dollar.</strong> A textbook risk-on / risk-off currency: it
-          rises when global investors want Australian assets and falls when they retreat, so
-          its direction is a clean read on appetite for the market.</li>
-        <li><strong>Yield-curve slope.</strong> The gap between 10-year and 2-year government
-          yields drives bank net-interest margins &mdash; financials are the ASX&rsquo;s other
-          large bloc &mdash; and is a long-standing lead on the economic cycle.</li>
-        <li><strong>Global credit risk.</strong> Australian equities are highly geared to
-          global risk appetite; the US high-yield credit spread is the cleanest, most liquid
-          measure of whether global capital is reaching for risk or fleeing it.</li>
-        <li><strong>Short positioning.</strong> Aggregate short interest is the one input that
-          measures how investors are <em>actually</em> positioned on ASX stocks rather than
-          inferring it &mdash; rising shorts signal growing bearishness.</li>
-      </ul>
+    <section class="about-card">
+      <div class="grid-2">
+        <div>
+          <h2>What this measures</h2>
+          <p>This gauge reads the external forces that drive Australian shares &mdash; export
+            commodity prices, the Australian dollar, the bond-yield curve, global credit conditions
+            and how heavily the market is positioned short &mdash; and asks whether, taken together,
+            they are a <strong>tailwind</strong> or a <strong>headwind</strong>.</p>
+          <p>Because the ASX is so concentrated in miners and banks, these forces explain much of
+            what moves it &mdash; and all five come from free, official sources, so no licensed
+            share-price data is needed. It measures <em>conditions</em>, not share prices, and makes
+            no forecast.</p>
+          <p>The headline shows where today sits against the index&rsquo;s own history:
+            <strong>50 is typical</strong>, a low number marks an unusually strong headwind and a
+            high number an unusually strong tailwind. The five component bars stay on their own raw
+            0&ndash;100 scale.</p>
+        </div>
+        <div>
+          <h2>Why these five factors</h2>
+          <ul class="factors">
+            <li><strong>Commodity complex.</strong> Resources are about a quarter of the ASX and the
+              swing factor in its earnings; iron ore, coal, LNG and base metals move the miners and
+              the nation&rsquo;s terms of trade.</li>
+            <li><strong>The Australian dollar.</strong> A textbook risk-on / risk-off currency: it
+              rises when global investors want Australian assets and falls when they retreat.</li>
+            <li><strong>Yield-curve slope.</strong> The 10y&ndash;2y gap drives bank net-interest
+              margins &mdash; financials are the ASX&rsquo;s other large bloc &mdash; and leads the
+              economic cycle.</li>
+            <li><strong>Global credit risk.</strong> Australian equities are highly geared to global
+              risk appetite; the US high-yield spread is the cleanest measure of whether global
+              capital is reaching for risk or fleeing it.</li>
+            <li><strong>Short positioning.</strong> Aggregate short interest is the one input that
+              measures how investors are <em>actually</em> positioned on ASX stocks rather than
+              inferring it.</li>
+          </ul>
+        </div>
+      </div>
     </section>
 
     <footer class="foot">
-      <p id="source-note"></p>
-      <p class="disclaimer"><strong>Not financial advice.</strong> This is a market-conditions
-        gauge for general information only &mdash; not a recommendation and not a buy, sell or
-        timing signal. Sources: RBA (AUD/USD, Commonwealth Government bond yields), FRED
-        (US high-yield spread, IMF commodity prices) and ASIC (aggregate short positions).</p>
+      <p id="source-note" class="mono"></p>
+      <p class="disclaimer"><strong>Not financial advice.</strong> This is a market-conditions gauge
+        for general information only &mdash; not a recommendation and not a buy, sell or timing
+        signal. Sources: RBA (AUD/USD, Commonwealth Government bond yields), FRED (US high-yield
+        spread, IMF commodity prices) and ASIC (aggregate short positions).</p>
     </footer>
   </main>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
