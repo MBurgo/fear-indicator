@@ -42,6 +42,23 @@ python -m http.server --directory web 8137      # http://localhost:8137
 PYTHONPATH=src python -m asx_drivers.cli --source live --asic-dir ~/asic --json web/data.json
 ```
 
+To populate that folder, fetch ASIC's daily short-position files (one per trading
+day, ~4 business days in arrears) over a date range:
+
+```bash
+# Default range is ~2 years up to (today - 4 business days):
+PYTHONPATH=src python -m asx_drivers.fetch_asic --out ~/asic
+# Or a specific start:
+PYTHONPATH=src python -m asx_drivers.fetch_asic --out ~/asic --start 2022-01-01
+```
+
+The fetcher tries several known ASIC URL patterns and validates each download by
+parsing it, saving only real files (resumable — existing files are skipped). If
+the first dozen days all fail it aborts and prints the URLs it tried, so you can
+copy the real one from ASIC's short-selling reports page and the template can be
+corrected. Then re-run the `--asic-dir ~/asic` command above to light up the
+fifth component.
+
 Live needs outbound access to `www.rba.gov.au` and `fred.stlouisfed.org`; no API
 key. The commodity basket loads each leg from FRED and renormalises weights over
 whatever loads, so a single dead series id degrades gracefully. The ASIC short
