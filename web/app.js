@@ -23,6 +23,20 @@ const COMPONENT_LABELS = {
   china: "China momentum",
 };
 
+// What each band means for an Australian investor (keyed by label).
+const BAND_DESCRIPTIONS = {
+  "Strong Headwind": "The forces driving Australian shares are strongly unfavourable — among the most hostile readings in the index's history.",
+  "Headwind": "On balance, conditions are leaning against Australian equities.",
+  "Neutral": "The drivers are broadly balanced — a typical reading, with no clear push either way.",
+  "Tailwind": "On balance, conditions are leaning in favour of Australian equities.",
+  "Strong Tailwind": "The forces driving Australian shares are strongly favourable — among the most supportive readings in the index's history.",
+  // ASX Mood Index fallbacks
+  "Extreme Fear": "Sentiment is deeply fearful — among the most fearful readings in the index's history.",
+  "Fear": "Sentiment is leaning fearful.",
+  "Greed": "Sentiment is leaning greedy.",
+  "Extreme Greed": "Sentiment is intensely greedy — among the most greedy readings in the index's history.",
+};
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 // Build [{min,max,label,color}] bands from four ascending edges + five labels.
@@ -126,6 +140,7 @@ function renderBandLegend(bands, score) {
   for (const band of bands) {
     const chip = document.createElement("div");
     chip.className = "band-chip" + (band === current ? " active" : "");
+    if (BAND_DESCRIPTIONS[band.label]) chip.title = BAND_DESCRIPTIONS[band.label];
     const dot = document.createElement("span");
     dot.className = "band-dot";
     dot.style.background = band.color;
@@ -136,6 +151,14 @@ function renderBandLegend(bands, score) {
     chip.append(dot, txt);
     root.appendChild(chip);
   }
+}
+
+function renderBandDescription(label) {
+  const root = document.getElementById("band-description");
+  if (!root) return;
+  const desc = BAND_DESCRIPTIONS[label] || "";
+  root.textContent = desc;
+  root.style.display = desc ? "block" : "none";
 }
 
 function renderSummary(summary) {
@@ -247,8 +270,10 @@ async function main() {
       const tag = document.querySelector(".tagline");
       if (tag) tag.textContent = data.tagline;
     }
+    const currentLabel = data.label || bandForScore(data.score, bands).label;
     renderGauge(data.score, bands, data.lowLabel, data.highLabel);
     renderReadout(data, bands);
+    renderBandDescription(currentLabel);
     renderBandLegend(bands, data.score);
     renderSummary(data.summary);
     renderComponents(data.components || {}, bands);

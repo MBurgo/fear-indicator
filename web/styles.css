@@ -125,6 +125,15 @@ h2 {
   display: inline-block;
 }
 
+.band-desc {
+  width: 100%;
+  max-width: 52ch;
+  margin: 14px auto 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .summary {
   width: 100%;
   margin: 16px 0 0;
@@ -138,7 +147,17 @@ h2 {
   margin: 0 0 12px;
   color: var(--muted);
 }
-.about-card p:last-child { margin-bottom: 0; }
+.about-card h2 { margin-top: 22px; }
+.about-card h2:first-child { margin-top: 0; }
+
+.factors {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+.factors li { margin-bottom: 10px; }
+.factors li:last-child { margin-bottom: 0; }
+.factors strong { color: var(--text); }
 
 /* Components */
 .components { display: grid; gap: 14px; }

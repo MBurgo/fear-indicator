@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ASX Mood Index</title>
   <meta name="description" content="A Fear & Greed-style market-sentiment gauge for the Australian market." />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <main class="wrap">
@@ -21,6 +21,7 @@
         <div id="gauge-score" class="score">&ndash;&ndash;</div>
         <div id="gauge-label" class="label">Loading&hellip;</div>
         <div id="gauge-date" class="asof"></div>
+        <p id="band-description" class="band-desc"></p>
       </div>
       <div id="band-legend" class="band-legend"></div>
       <p id="summary" class="summary"></p>
@@ -42,10 +43,33 @@
       <p>This gauge reads the external forces that drive Australian shares &mdash; export
         commodity prices, the Australian dollar, the bond-yield curve, global credit
         conditions and how heavily the market is positioned short &mdash; and asks whether,
-        taken together, they are a <strong>tailwind</strong> or a <strong>headwind</strong>.
-        Each input is scored against its own recent history; the bands above are calibrated
-        from the index&rsquo;s own range, so &ldquo;neutral&rdquo; means typical, not a flat 50.</p>
-      <p>It measures <em>conditions</em>, not share prices, and it makes no forecast.</p>
+        taken together, they are a <strong>tailwind</strong> or a <strong>headwind</strong>.</p>
+      <p>Because the ASX is so concentrated in miners and banks, these forces explain much of
+        what moves it &mdash; and all five come from free, official sources, so no licensed
+        share-price data is needed. Each input is scored against its own recent history, and
+        the bands are calibrated from the index&rsquo;s own range, so &ldquo;neutral&rdquo;
+        means typical, not a flat 50. It measures <em>conditions</em>, not share prices, and
+        makes no forecast.</p>
+
+      <h2>Why these five factors</h2>
+      <ul class="factors">
+        <li><strong>Commodity complex.</strong> Resources are about a quarter of the ASX and
+          the swing factor in its earnings; the prices of Australia&rsquo;s main export
+          earners &mdash; iron ore, coal, LNG and base metals &mdash; move the miners and the
+          nation&rsquo;s terms of trade.</li>
+        <li><strong>The Australian dollar.</strong> A textbook risk-on / risk-off currency: it
+          rises when global investors want Australian assets and falls when they retreat, so
+          its direction is a clean read on appetite for the market.</li>
+        <li><strong>Yield-curve slope.</strong> The gap between 10-year and 2-year government
+          yields drives bank net-interest margins &mdash; financials are the ASX&rsquo;s other
+          large bloc &mdash; and is a long-standing lead on the economic cycle.</li>
+        <li><strong>Global credit risk.</strong> Australian equities are highly geared to
+          global risk appetite; the US high-yield credit spread is the cleanest, most liquid
+          measure of whether global capital is reaching for risk or fleeing it.</li>
+        <li><strong>Short positioning.</strong> Aggregate short interest is the one input that
+          measures how investors are <em>actually</em> positioned on ASX stocks rather than
+          inferring it &mdash; rising shorts signal growing bearishness.</li>
+      </ul>
     </section>
 
     <footer class="foot">
@@ -57,6 +81,6 @@
     </footer>
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
