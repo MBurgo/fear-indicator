@@ -80,14 +80,13 @@ function renderGauge(score, bands, lowLabel, highLabel) {
       "stroke-width": stroke, "stroke-linecap": "butt", opacity: "0.9",
     }));
   }
-  const left = polar(cx, cy, r + 24, scoreToAngle(2));
-  const right = polar(cx, cy, r + 24, scoreToAngle(98));
-  const lt = el("text", { x: left.x, y: left.y, "text-anchor": "start" });
+  // End labels, placed in the clear space below the arc for legibility.
+  const lt = el("text", { x: 36, y: 238, "text-anchor": "start" });
   lt.textContent = "0 · " + (lowLabel || "Fear");
-  const rt = el("text", { x: right.x, y: right.y, "text-anchor": "end" });
+  const rt = el("text", { x: 364, y: 238, "text-anchor": "end" });
   rt.textContent = (highLabel || "Greed") + " · 100";
   for (const t of [lt, rt]) {
-    t.setAttribute("fill", "#8b98a5"); t.setAttribute("font-size", "13");
+    t.setAttribute("fill", "#b7c2cd"); t.setAttribute("font-size", "14");
     t.setAttribute("font-family", "ui-monospace, monospace"); svg.appendChild(t);
   }
   const tip = polar(cx, cy, r - 10, scoreToAngle(score));
