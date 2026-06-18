@@ -84,6 +84,27 @@ tailwind/headwind summary are written into the JSON and rendered by the front en
 (gauge bands, legend, callout). Pass `--fixed-bands` for the raw composite score
 with static 0–100 cutoffs instead.
 
+## Deployment
+
+`.github/workflows/deploy.yml` refreshes the index and publishes the dashboard to
+**GitHub Pages** on a daily weekday schedule (and on demand via *Run workflow*):
+
+1. Fetches ASIC short-position files incrementally into `data/asic` (persisted
+   between runs with Actions cache, so only the first run does the full backfill).
+2. Runs the CLI to compute `web/data.json`.
+3. Uploads `web/` as a Pages artifact and deploys it.
+
+One-time setup: in **Settings → Pages → Source**, choose **GitHub Actions**.
+Scheduled workflows only run from the default branch, so this takes effect once
+merged there. GitHub runners have unrestricted internet, so RBA/FRED/ASIC all work
+in CI even though some are blocked in restricted sandboxes.
+
+**Cloudflare Pages alternative:** point a Cloudflare Pages project at this repo
+with output directory `web/`, and have the workflow commit `web/data.json`
+(force-add it, since it's gitignored for local dev) instead of uploading a Pages
+artifact; Cloudflare auto-deploys on push. The compute stays in Python either way
+— no Worker port needed.
+
 ---
 
 # ASX Mood Index *(shelved)*
