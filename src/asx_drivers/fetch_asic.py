@@ -49,14 +49,29 @@ def urls_for(date: pd.Timestamp) -> list[str]:
     return [t.format(d=d, Y=date.strftime("%Y"), M=date.strftime("%m")) for t in URL_TEMPLATES]
 
 
-def _try_download(date: pd.Timestamp) -> bytes | None:
-    """Return file bytes for a date if any candidate URL yields a parseable file."""
-    for url in urls_for(date):
+_TRANSIENT_STATUS = {429, 500, 502, 503, 504}
+
+
+def _get(url: str, attempts: int = 3) -> requests.Response | None:
+    """GET with retries on transient failures (timeouts, throttling, 5xx/429)."""
+    for k in range(attempts):
         try:
             resp = requests.get(url, headers=_HEADERS, timeout=_TIMEOUT)
         except requests.RequestException:
+            time.sleep(0.5 * (k + 1))
             continue
-        if resp.status_code != 200 or not resp.content:
+        if resp.status_code in _TRANSIENT_STATUS:
+            time.sleep(0.5 * (k + 1))
+            continue
+        return resp
+    return None
+
+
+def _try_download(date: pd.Timestamp) -> bytes | None:
+    """Return file bytes for a date if any candidate URL yields a parseable file."""
+    for url in urls_for(date):
+        resp = _get(url)
+        if resp is None or resp.status_code != 200 or not resp.content:
             continue
         try:
             asic.parse_aggregate_file(resp.content)  # validate it really is one
