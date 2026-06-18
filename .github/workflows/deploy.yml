@@ -1,33 +1,29 @@
-name: Update & deploy ASX Drivers Index
+name: Update ASX Drivers Index data
 
-# Runs daily on weekdays (and on demand) to refresh the index data and publish
-# the static dashboard to GitHub Pages.
+# Daily (weekday) refresh of the index data. The compute runs here in Python;
+# the resulting web/data.json is committed back to the repo, and Cloudflare Pages
+# (connected to this repo, serving the web/ directory) auto-deploys on the push.
 #
-# One-time setup:
-#   Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
-#
-# Scheduled runs only fire from the repository's default branch, so this takes
-# effect once merged there. The first run does a full ASIC backfill (~10-15 min);
-# later runs restore the cache and fetch only the new days.
+# Scheduled workflows run from the default branch. The first run does a full ASIC
+# backfill (~10-15 min); later runs restore the cache and fetch only new days.
+# Pushes made with GITHUB_TOKEN do not re-trigger workflows, so there is no loop.
 
 on:
   schedule:
-    # 09:00 UTC on weekdays (~19:00-20:00 AEST/AEDT) - after the AU close and the
+    # 09:00 UTC on weekdays (~19:00-20:00 AEST/AEDT), after the AU close and the
     # RBA's next-day publication. Adjust to taste.
     - cron: "0 9 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: asx-drivers-pages
+  group: asx-drivers-update
   cancel-in-progress: false
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,8 +40,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/asic
-          # Unique key each run saves a fresh (growing) cache; restore-keys pulls
-          # the most recent prior cache so the fetch is incremental.
           key: asic-${{ github.run_id }}
           restore-keys: |
             asic-
@@ -56,17 +50,14 @@ jobs:
       - name: Compute index -> web/data.json
         run: asx-drivers --source live --asic-dir data/asic --json web/data.json
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: web
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
+      - name: Commit updated data
+        run: |
+          git config user.name "asx-drivers-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f web/data.json
+          if git diff --staged --quiet; then
+            echo "No data change."
+          else
+            git commit -m "chore: update index data $(date -u +%F)"
+            git push
+          fi

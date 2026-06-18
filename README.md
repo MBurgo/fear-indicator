@@ -86,24 +86,23 @@ with static 0–100 cutoffs instead.
 
 ## Deployment
 
-`.github/workflows/deploy.yml` refreshes the index and publishes the dashboard to
-**GitHub Pages** on a daily weekday schedule (and on demand via *Run workflow*):
+`.github/workflows/deploy.yml` refreshes the data on a daily weekday schedule (and
+on demand via *Run workflow*). The compute runs in Python on GitHub's runners
+(which have open internet, so RBA/FRED/ASIC all work in CI):
 
-1. Fetches ASIC short-position files incrementally into `data/asic` (persisted
+1. Fetch ASIC short-position files incrementally into `data/asic` (persisted
    between runs with Actions cache, so only the first run does the full backfill).
-2. Runs the CLI to compute `web/data.json`.
-3. Uploads `web/` as a Pages artifact and deploys it.
+2. Run the CLI to compute `web/data.json`.
+3. Commit `web/data.json` back to the repo.
 
-One-time setup: in **Settings → Pages → Source**, choose **GitHub Actions**.
-Scheduled workflows only run from the default branch, so this takes effect once
-merged there. GitHub runners have unrestricted internet, so RBA/FRED/ASIC all work
-in CI even though some are blocked in restricted sandboxes.
+**Cloudflare Pages** (connected to this repo, serving the `web/` directory) then
+auto-deploys on that push. No build step and no Worker port — the page is static
+and reads `data.json` at runtime. See the Cloudflare setup steps in the project
+notes. Until the first data refresh lands, the page falls back to the committed
+`web/data.sample.json`.
 
-**Cloudflare Pages alternative:** point a Cloudflare Pages project at this repo
-with output directory `web/`, and have the workflow commit `web/data.json`
-(force-add it, since it's gitignored for local dev) instead of uploading a Pages
-artifact; Cloudflare auto-deploys on push. The compute stays in Python either way
-— no Worker port needed.
+Scheduled workflows run from the repository's default branch. Pushes made with the
+workflow's `GITHUB_TOKEN` do not re-trigger the workflow, so there is no loop.
 
 ---
 
