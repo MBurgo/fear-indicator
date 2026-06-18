@@ -139,6 +139,37 @@ def fetch_range(
     return saved
 
 
+def inspect_first_missing(out_dir: str | Path, start: pd.Timestamp, end: pd.Timestamp) -> int:
+    """Download the first missing date's file and dump bytes/encoding/parse error."""
+    out = Path(out_dir)
+    for date in pd.bdate_range(start, end):
+        dest = out / FILENAME_TMPL.format(d=date.strftime("%Y%m%d"))
+        if dest.exists():
+            continue
+        url = urls_for(date)[0]
+        resp = _get(url)
+        print(f"date {date.date()}  url {url}")
+        if resp is None:
+            print("  no response")
+            return 0
+        print(f"  status {resp.status_code}  bytes {len(resp.content)}")
+        print(f"  raw head: {resp.content[:120]!r}")
+        for enc in ("utf-16", "utf-8-sig", "latin-1"):
+            try:
+                preview = resp.content[:300].decode(enc, errors="replace").replace("\n", "\\n")
+                print(f"  [{enc}] {preview[:200]}")
+            except Exception as exc:  # noqa: BLE001
+                print(f"  [{enc}] decode failed: {exc}")
+        try:
+            df = asic.parse_aggregate_file(resp.content)
+            print(f"  parse OK, columns: {list(df.columns)}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  parse error: {exc}")
+        return 0
+    print("No missing dates found in range.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Fetch ASIC daily short-position files")
     p.add_argument("--out", required=True, help="output directory for the files")
@@ -146,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--end", default=None, help="end date YYYY-MM-DD (default: today - 4 business days)")
     p.add_argument("--delay", type=float, default=0.2, help="seconds between requests (politeness)")
     p.add_argument("--verbose", action="store_true", help="print a reason for each missed date")
+    p.add_argument("--inspect", action="store_true", help="dump the first missing file for debugging")
     args = p.parse_args(argv)
 
     # ASIC files appear ~4 business days after their reporting date.
@@ -155,6 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         else pd.Timestamp.today().normalize() - pd.tseries.offsets.BusinessDay(4)
     )
     start = pd.Timestamp(args.start) if args.start else end - pd.DateOffset(years=2)
+    if args.inspect:
+        return inspect_first_missing(args.out, start, end)
     print(f"Fetching ASIC short-position files {start.date()} .. {end.date()} into {args.out}")
     fetch_range(start, end, args.out, delay=args.delay, verbose=args.verbose)
     return 0
