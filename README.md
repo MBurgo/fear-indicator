@@ -1,4 +1,48 @@
-# ASX Mood Index
+# ASX sentiment gauges
+
+This repo hosts two related Fear & Greed–style gauges for the Australian market,
+sharing one normalisation engine and one front end:
+
+- **ASX Drivers Index** *(active)* — measures whether the forces that drive
+  Australian shares (commodities, the AUD, the yield curve, global credit risk)
+  are a tailwind or a headwind. Built entirely from free, redistribution-clean,
+  script-friendly sources (RBA + FRED), with no licensed exchange-price
+  dependency. Spec: [`docs/asx-drivers-spec.md`](docs/asx-drivers-spec.md).
+- **ASX Mood Index** *(shelved)* — the original price-based sentiment gauge. The
+  engine and methodology are sound, but a credible *public* version needs a
+  licensed equity feed (~€20/mo), so it's parked. Documented below.
+
+## ASX Drivers Index — Phase 0
+
+Four fully-daily, free, keyless components through the shared engine:
+
+| Component | Raw signal | Direction | Source |
+|---|---|---|---|
+| Commodity complex | Gold 63-day momentum (Phase 0 leg) | high = tailwind | FRED gold |
+| AUD risk flow | AUD/USD 20-day momentum | high = tailwind | RBA F11.1 |
+| Yield-curve slope | 10y − 2y CGS yield | high = tailwind | RBA F2 |
+| Global credit risk | US high-yield spread level | high = headwind (inverted) | FRED `BAMLH0A0HYM2` |
+
+```bash
+python -m pip install -e .
+python -m pytest -q
+
+# Offline demo (no network):
+PYTHONPATH=src python -m asx_drivers.cli --source synthetic
+
+# Live (keyless: RBA + FRED, both script-friendly and not anti-bot-walled):
+PYTHONPATH=src python -m asx_drivers.cli --source live --json web/data.json
+python -m http.server --directory web 8137      # http://localhost:8137
+```
+
+Live needs outbound access to `www.rba.gov.au` and `fred.stlouisfed.org`. No API
+key required. The front end picks up the drivers framing (title, tailwind/headwind
+labels) from the JSON automatically. Phase 1 adds the mixed-frequency commodity
+basket and the ASIC short-positioning component — see the spec.
+
+---
+
+# ASX Mood Index *(shelved)*
 
 A Fear & Greed–style market-sentiment gauge for the Australian market, built *in
 the method of* the CNN Business Fear & Greed Index and calibrated to the ASX. A

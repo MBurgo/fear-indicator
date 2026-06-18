@@ -21,6 +21,7 @@ F2_URL = "https://www.rba.gov.au/statistics/tables/csv/f2-data.csv"
 
 AUDUSD_SERIES_ID = "FXRUSD"
 CGS_10Y_SERIES_ID = "FCMYGBAG10"
+CGS_2Y_SERIES_ID = "FCMYGBAG2"
 
 _TIMEOUT = 30
 
@@ -86,3 +87,10 @@ def load_cgs_10y_yield(text: str | None = None) -> pd.Series:
     if text is None:
         text = _fetch(F2_URL)
     return parse_rba_csv(text, CGS_10Y_SERIES_ID).rename("cgs_10y_yield")
+
+
+def load_cgs_2y_yield(text: str | None = None) -> pd.Series:
+    """2y Commonwealth Government bond yield (percent) from RBA F2."""
+    if text is None:
+        text = _fetch(F2_URL)
+    return parse_rba_csv(text, CGS_2Y_SERIES_ID).rename("cgs_2y_yield")

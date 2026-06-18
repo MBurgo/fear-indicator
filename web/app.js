@@ -11,12 +11,19 @@ const BANDS = [
 ];
 
 const COMPONENT_LABELS = {
+  // ASX Mood Index
   momentum: "Momentum",
   strength: "Stock strength",
   breadth: "Volume breadth",
   safe_haven: "Safe haven",
   volatility: "Volatility",
-  aud: "AUD risk-on",
+  aud: "AUD risk flow",
+  // ASX Drivers Index
+  commodity: "Commodity complex",
+  curve_slope: "Yield-curve slope",
+  credit_risk: "Global credit risk",
+  short_positioning: "Short positioning",
+  china: "China momentum",
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -55,7 +62,7 @@ function arcPath(cx, cy, r, startScore, endScore) {
   return `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`;
 }
 
-function renderGauge(score) {
+function renderGauge(score, lowLabel, highLabel) {
   const svg = document.getElementById("gauge");
   svg.innerHTML = "";
   const cx = 200, cy = 210, r = 160, stroke = 26;
@@ -75,9 +82,9 @@ function renderGauge(score) {
   const left = polar(cx, cy, r + 24, scoreToAngle(2));
   const right = polar(cx, cy, r + 24, scoreToAngle(98));
   const fearTxt = el("text", { x: left.x, y: left.y, "text-anchor": "start", class: "tick" });
-  fearTxt.textContent = "0 Fear";
+  fearTxt.textContent = "0 " + (lowLabel || "Fear");
   const greedTxt = el("text", { x: right.x, y: right.y, "text-anchor": "end", class: "tick" });
-  greedTxt.textContent = "Greed 100";
+  greedTxt.textContent = (highLabel || "Greed") + " 100";
   for (const t of [fearTxt, greedTxt]) {
     t.setAttribute("fill", "#8b98a5");
     t.setAttribute("font-size", "13");
@@ -202,7 +209,16 @@ async function loadData() {
 async function main() {
   try {
     const { data, source } = await loadData();
-    renderGauge(data.score);
+    if (data.title) {
+      document.title = data.title;
+      const h1 = document.querySelector(".head h1");
+      if (h1) h1.textContent = data.title;
+    }
+    if (data.tagline) {
+      const tag = document.querySelector(".tagline");
+      if (tag) tag.textContent = data.tagline;
+    }
+    renderGauge(data.score, data.lowLabel, data.highLabel);
     renderReadout(data);
     renderComponents(data.components || {});
     renderHistory(data.history || []);

@@ -19,6 +19,7 @@ dev = ["pytest>=7.0"]
 
 [project.scripts]
 asx-mood = "asx_mood.cli:main"
+asx-drivers = "asx_drivers.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
