@@ -23,19 +23,29 @@ import pandas as pd
 _DATE_RE = re.compile(r"(\d{8})")
 
 
+def _decode_bytes(raw: bytes) -> str:
+    """Decode ASIC bytes, detecting UTF-16 vs UTF-8 (ASIC ships both formats).
+
+    Decoding UTF-8 bytes as UTF-16 silently yields mojibake rather than raising,
+    so we must detect the encoding up front: BOM first, then a null-byte heuristic
+    for BOM-less UTF-16, then UTF-8, then latin-1 as a last resort.
+    """
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return raw.decode("utf-16")
+    if raw[:3] == b"\xef\xbb\xbf":
+        return raw.decode("utf-8-sig")
+    head = raw[:2000]
+    if head and head.count(0) > len(head) * 0.2:  # many NULs => UTF-16 without BOM
+        return raw.decode("utf-16", errors="replace")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("latin-1", errors="replace")
+
+
 def _read_tabular(raw: bytes | str) -> pd.DataFrame:
-    """Read an ASIC file (bytes or text), sniffing encoding and delimiter."""
-    if isinstance(raw, bytes):
-        for enc in ("utf-16", "utf-8-sig", "latin-1"):
-            try:
-                text = raw.decode(enc)
-                break
-            except UnicodeDecodeError:
-                continue
-        else:
-            text = raw.decode("latin-1", errors="replace")
-    else:
-        text = raw
+    """Read an ASIC file (bytes or text), detecting encoding and delimiter."""
+    text = _decode_bytes(raw) if isinstance(raw, bytes) else raw
     last_err: Exception | None = None
     for sep in ("\t", ",", ";"):
         try:

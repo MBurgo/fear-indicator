@@ -74,6 +74,21 @@ def test_asic_parse_and_aggregate():
     assert abs(pct - expected) < 1e-9
 
 
+def test_asic_parses_both_utf16_tab_and_utf8_comma():
+    # ASIC ships both formats; both must parse to the same result.
+    header = (
+        "Product,Product Code,Reported Short Positions,Total Product in Issue,"
+        "% of Total Product in Issue Reported as Short Positions\n"
+    )
+    body = "4DS MEMORY LIMITED ORDINARY,4DX,355002,391389665,.09070296\n"
+    utf8_comma = (header + body).encode("utf-8")
+    utf16_tab = (header.replace(",", "\t") + body.replace(",", "\t")).encode("utf-16")
+    for raw in (utf8_comma, utf16_tab):
+        df = asic.parse_aggregate_file(raw)
+        assert list(df["code"]) == ["4DX"]
+        assert abs(df["short"].iloc[0] - 355002) < 1e-6
+
+
 def test_phase1_build_with_short_adds_component():
     inputs = synthetic.make_inputs(n_days=1500, seed=4)
     from asx_drivers.data import align
