@@ -27,7 +27,11 @@ COMPONENT_LABELS = {
     "aud": "AUD risk flow",
     "curve_slope": "Yield-curve slope",
     "credit_risk": "Global credit risk",
+    "short_positioning": "Short positioning",
 }
+
+# Daily series that must align onto a common calendar before the engine runs.
+DAILY_KEYS = ["audusd", "cgs_10y_yield", "cgs_2y_yield", "hy_oas"]
 
 # This is a conditions gauge, so re-label the shared fear/greed bands as
 # headwind/tailwind for an Australian-investor audience.
@@ -40,36 +44,47 @@ LABEL_MAP = {
 }
 
 
-def _load_live() -> dict[str, pd.Series]:
+def _load_live(asic_dir: str | None = None) -> dict[str, object]:
     from asx_mood.data import rba
 
-    from .data import fred
+    from .data import asic, fred
 
-    return {
+    basket, weights, errors = fred.build_commodity_basket()
+    if errors:
+        print(f"  commodity basket: loaded {list(weights)}; skipped {len(errors)} leg(s)")
+
+    inputs: dict[str, object] = {
         "audusd": rba.load_audusd(),
-        "commodity": fred.load_commodity(),
         "cgs_10y_yield": rba.load_cgs_10y_yield(),
         "cgs_2y_yield": rba.load_cgs_2y_yield(),
         "hy_oas": fred.load_hy_oas(),
+        "commodity_basket": basket,
+        "short_pct": None,
     }
+    if asic_dir:
+        inputs["short_pct"] = asic.build_short_series_from_dir(asic_dir)
+        print(f"  short positioning: loaded {len(inputs['short_pct'])} days from {asic_dir}")
+    return inputs
 
 
-def _load_synthetic() -> dict[str, pd.Series]:
+def _load_synthetic() -> dict[str, object]:
     from .data.synthetic import make_inputs
 
     return make_inputs()
 
 
 def run(args: argparse.Namespace) -> int:
-    frames = _load_synthetic() if args.source == "synthetic" else _load_live()
-    df = align(frames).dropna()
+    frames = _load_synthetic() if args.source == "synthetic" else _load_live(args.asic_dir)
+
+    daily = align({k: frames[k] for k in DAILY_KEYS}).dropna()
 
     scores, composite_idx = idx_mod.build(
-        df["audusd"],
-        df["commodity"],
-        df["cgs_10y_yield"],
-        df["cgs_2y_yield"],
-        df["hy_oas"],
+        daily["audusd"],
+        daily["cgs_10y_yield"],
+        daily["cgs_2y_yield"],
+        daily["hy_oas"],
+        frames["commodity_basket"],
+        short_pct=frames.get("short_pct"),
         window=args.window,
         min_periods=args.min_periods,
     )
@@ -111,6 +126,13 @@ def main(argv: list[str] | None = None) -> int:
         choices=["synthetic", "live"],
         default="synthetic",
         help="synthetic (offline demo) or live (fetch RBA + FRED)",
+    )
+    p.add_argument(
+        "--asic-dir",
+        dest="asic_dir",
+        default=None,
+        help="directory of downloaded ASIC daily short-position files (adds the "
+        "short-positioning component)",
     )
     p.add_argument("--window", type=int, default=252, help="normalisation window (days)")
     p.add_argument(

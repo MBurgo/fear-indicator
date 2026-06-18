@@ -35,6 +35,19 @@ HY_OAS_SERIES_ID = "BAMLH0A0HYM2"
 BRENT_SERIES_ID = "DCOILBRENTEU"
 WTI_SERIES_ID = "DCOILWTICO"
 
+# Phase 1 monthly export-commodity basket: IMF Primary Commodity Prices, hosted
+# on FRED (keyless), weighted toward Australia's principal export earners.
+# (series id, leg name, basket weight). Weights are renormalised over whichever
+# legs successfully load, so a single dead id degrades gracefully.
+COMMODITY_BASKET = (
+    ("PIORECRUSDM", "iron_ore", 0.35),
+    ("PCOALAUUSDM", "coal_au", 0.20),
+    ("PNGASJPUSDM", "lng_asia", 0.15),
+    ("PALUMUSDM", "aluminium", 0.10),
+    ("PCOPPUSDM", "copper", 0.10),
+    ("PNICKUSDM", "nickel", 0.10),
+)
+
 _TIMEOUT = 30
 _HEADERS = {"User-Agent": "asx-drivers-index/0.1"}
 
@@ -100,3 +113,40 @@ def load_commodity(text: str | None = None) -> pd.Series:
     raise RuntimeError(
         "Could not load a commodity series from FRED -> " + " | ".join(errors)
     )
+
+
+def build_commodity_basket(
+    basket=COMMODITY_BASKET,
+    texts: dict[str, str] | None = None,
+) -> tuple[pd.Series, dict[str, float], list[str]]:
+    """Build a weighted, monthly export-commodity basket index from FRED series.
+
+    Each leg is rebased to 100 at the first common month, then combined with
+    renormalised weights. Returns (basket_index, used_weights, errors). Legs that
+    fail to load are skipped and their weight redistributed, so the basket still
+    builds from the survivors. ``texts`` (series_id -> CSV) is for offline tests.
+    """
+    series: dict[str, pd.Series] = {}
+    weights: dict[str, float] = {}
+    errors: list[str] = []
+    for series_id, name, weight in basket:
+        try:
+            text = texts.get(series_id) if texts else None
+            if texts is not None and text is None:
+                raise ValueError("no offline text supplied")
+            series[name] = load_series(series_id, text)
+            weights[name] = weight
+        except Exception as exc:  # noqa: BLE001 - aggregate per leg
+            errors.append(f"{series_id}: {exc}")
+    if not series:
+        raise RuntimeError(
+            "Could not load any commodity basket leg from FRED -> " + " | ".join(errors)
+        )
+    df = pd.DataFrame(series).dropna()
+    if df.empty:
+        raise RuntimeError("Commodity basket legs do not overlap in time.")
+    rebased = df / df.iloc[0] * 100.0
+    wsum = sum(weights.values())
+    basket_index = sum(rebased[name] * (weights[name] / wsum) for name in series)
+    basket_index.name = "commodity_basket"
+    return basket_index, {k: weights[k] / wsum for k in weights}, errors

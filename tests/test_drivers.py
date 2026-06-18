@@ -28,14 +28,13 @@ def test_credit_risk_inverts_in_composite():
     # Rising credit spreads must lower the credit component score (headwind).
     rng = np.random.default_rng(3)
     n = 320
-    base = {
-        "audusd": _series(0.72 + np.cumsum(rng.normal(0, 0.001, n))),
-        "commodity": _series(85 + np.cumsum(rng.normal(0, 0.2, n))),
-        "cgs_10y_yield": _series(np.full(n, 4.0) + rng.normal(0, 0.01, n)),
-        "cgs_2y_yield": _series(np.full(n, 3.2) + rng.normal(0, 0.01, n)),
-        "hy_oas": _series(np.linspace(3.0, 8.0, n)),  # steadily widening = fear
-    }
-    scores, _ = index.build(**base, window=252)
+    audusd = _series(0.72 + np.cumsum(rng.normal(0, 0.001, n)))
+    cgs10 = _series(np.full(n, 4.0) + rng.normal(0, 0.01, n))
+    cgs2 = _series(np.full(n, 3.2) + rng.normal(0, 0.01, n))
+    hy = _series(np.linspace(3.0, 8.0, n))  # steadily widening = fear
+    months = pd.date_range("2021-01-01", periods=40, freq="MS")
+    basket = pd.Series(np.linspace(100, 120, 40), index=months, name="commodity_basket")
+    scores, _ = index.build(audusd, cgs10, cgs2, hy, basket, window=252)
     # With spreads at their widest vs the trailing year, the (inverted) credit
     # score should sit in the lower (headwind) half.
     assert scores["credit_risk"].iloc[-1] < 50

@@ -1,8 +1,16 @@
-"""Phase 0 orchestration for the ASX Drivers Index.
+"""Phase 1 orchestration for the ASX Drivers Index.
 
-Wires the four fully-daily components through the shared normalisation engine and
-compositor. Phase 1 adds the mixed-frequency commodity basket and the ASIC
-short-positioning component (see docs/asx-drivers-spec.md section 5).
+Assembles five components onto a daily grid using native-frequency normalisation
+and as-of forward-fill (spec section 5):
+
+  daily   - AUD risk flow, yield-curve slope, global credit risk (inverted)
+  monthly - export commodity basket (iron ore, coal, LNG, base metals)
+  daily/T+4 - ASIC short positioning (inverted), optional
+
+The short component is optional: if no ASIC data is supplied the index runs on
+the other four. The composite requires every *active* component to be present, so
+the headline reading always uses the full set (early history is trimmed during
+warm-up).
 """
 
 from __future__ import annotations
@@ -10,62 +18,75 @@ from __future__ import annotations
 import pandas as pd
 
 from asx_mood import composite
-from asx_mood.normalise import normalise
 
-from . import components
+from . import components, frequency
 
-# Active Phase 0 components, in display order. ``invert`` is True for
-# headwind-positive signals (credit risk).
-PHASE0_INVERT = {"credit_risk": True}
-PHASE0_ORDER = ["commodity", "aud", "curve_slope", "credit_risk"]
+DAILY_WINDOW = 252
+MONTHLY_WINDOW = 36
+COMMODITY_MOMENTUM_MONTHS = 3
+SHORT_LAG_BDAYS = 4
 
-
-def raw_signals(
-    audusd: pd.Series,
-    commodity: pd.Series,
-    cgs_10y_yield: pd.Series,
-    cgs_2y_yield: pd.Series,
-    hy_oas: pd.Series,
-) -> pd.DataFrame:
-    """Compute the four Phase 0 raw signals on an aligned index."""
-    return pd.DataFrame(
-        {
-            "commodity": components.commodity_momentum_raw(commodity),
-            "aud": components.aud_momentum_raw(audusd),
-            "curve_slope": components.curve_slope_raw(cgs_10y_yield, cgs_2y_yield),
-            "credit_risk": components.credit_spread_raw(hy_oas),
-        }
-    )
-
-
-def component_scores(
-    raws: pd.DataFrame,
-    window: int = 252,
-    min_periods: int | None = None,
-) -> pd.DataFrame:
-    """Normalise each raw signal to 0..100, inverting headwind-positive signals."""
-    out = {}
-    for col in PHASE0_ORDER:
-        out[col] = normalise(
-            raws[col],
-            invert=PHASE0_INVERT.get(col, False),
-            window=window,
-            min_periods=min_periods,
-        )
-    return pd.DataFrame(out)
+ORDER = ["commodity", "aud", "curve_slope", "credit_risk", "short_positioning"]
 
 
 def build(
     audusd: pd.Series,
-    commodity: pd.Series,
     cgs_10y_yield: pd.Series,
     cgs_2y_yield: pd.Series,
     hy_oas: pd.Series,
-    window: int = 252,
+    commodity_basket: pd.Series,
+    short_pct: pd.Series | None = None,
+    window: int = DAILY_WINDOW,
+    monthly_window: int = MONTHLY_WINDOW,
     min_periods: int | None = None,
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """End-to-end Phase 0: aligned inputs -> (component_scores, composite_index)."""
-    raws = raw_signals(audusd, commodity, cgs_10y_yield, cgs_2y_yield, hy_oas)
-    scores = component_scores(raws, window=window, min_periods=min_periods)
-    idx = composite.composite(scores)
-    return scores, idx
+    """End-to-end Phase 1: inputs -> (component_scores, composite_index).
+
+    The daily inputs (audusd, yields, hy_oas) must already be aligned to a common
+    daily index. ``commodity_basket`` is monthly; ``short_pct`` is daily (its own
+    report dates) or None.
+    """
+    daily_index = audusd.index
+
+    scores: dict[str, pd.Series] = {}
+
+    # Monthly component: normalise against a monthly window, then as-of ffill.
+    scores["commodity"] = frequency.monthly_score_to_daily(
+        components.commodity_momentum_raw(commodity_basket, window=COMMODITY_MOMENTUM_MONTHS),
+        daily_index,
+        invert=False,
+        window=monthly_window,
+    )
+
+    # Daily components.
+    scores["aud"] = frequency.daily_score(
+        components.aud_momentum_raw(audusd), window=window, min_periods=min_periods
+    )
+    scores["curve_slope"] = frequency.daily_score(
+        components.curve_slope_raw(cgs_10y_yield, cgs_2y_yield),
+        window=window,
+        min_periods=min_periods,
+    )
+    scores["credit_risk"] = frequency.daily_score(
+        components.credit_spread_raw(hy_oas),
+        invert=True,
+        window=window,
+        min_periods=min_periods,
+    )
+
+    # Optional daily-but-lagged component.
+    if short_pct is not None and not short_pct.dropna().empty:
+        short_score = frequency.daily_score(
+            components.short_interest_raw(short_pct),
+            invert=True,
+            window=window,
+            min_periods=min_periods,
+        )
+        scores["short_positioning"] = frequency.lag_to_daily(
+            short_score, daily_index, lag_bdays=SHORT_LAG_BDAYS
+        )
+
+    active = [c for c in ORDER if c in scores]
+    df_scores = pd.DataFrame({c: scores[c] for c in active}).reindex(daily_index)
+    idx = composite.composite(df_scores)
+    return df_scores, idx

@@ -12,16 +12,18 @@ sharing one normalisation engine and one front end:
   engine and methodology are sound, but a credible *public* version needs a
   licensed equity feed (~€20/mo), so it's parked. Documented below.
 
-## ASX Drivers Index — Phase 0
+## ASX Drivers Index — Phase 1
 
-Four fully-daily, free, keyless components through the shared engine:
+Five components on a daily grid, via native-frequency normalisation and as-of
+forward-fill (spec section 5). All free; the daily/monthly legs are keyless.
 
-| Component | Raw signal | Direction | Source |
-|---|---|---|---|
-| Commodity complex | Brent crude 63-day momentum (Phase 0 proxy) | high = tailwind | FRED `DCOILBRENTEU` (EIA) |
-| AUD risk flow | AUD/USD 20-day momentum | high = tailwind | RBA F11.1 |
-| Yield-curve slope | 10y − 2y CGS yield | high = tailwind | RBA F2 |
-| Global credit risk | US high-yield spread level | high = headwind (inverted) | FRED `BAMLH0A0HYM2` |
+| Component | Raw signal | Cadence | Direction | Source |
+|---|---|---|---|---|
+| Commodity complex | Export basket (iron ore, coal, LNG, base metals), 3-month momentum | monthly | high = tailwind | IMF series on FRED |
+| AUD risk flow | AUD/USD 20-day momentum | daily | high = tailwind | RBA F11.1 |
+| Yield-curve slope | 10y − 2y CGS yield | daily | high = tailwind | RBA F2 |
+| Global credit risk | US high-yield spread level | daily | high = headwind (inverted) | FRED `BAMLH0A0HYM2` |
+| Short positioning | Market-wide aggregate short % | daily, T+4 | high = headwind (inverted) | ASIC (optional) |
 
 ```bash
 python -m pip install -e .
@@ -30,15 +32,29 @@ python -m pytest -q
 # Offline demo (no network):
 PYTHONPATH=src python -m asx_drivers.cli --source synthetic
 
-# Live (keyless: RBA + FRED, both script-friendly and not anti-bot-walled):
+# Live (keyless: RBA + FRED). Without --asic-dir this runs the four
+# commodity/AUD/curve/credit components:
 PYTHONPATH=src python -m asx_drivers.cli --source live --json web/data.json
 python -m http.server --directory web 8137      # http://localhost:8137
+
+# Add the short-positioning component by pointing at a folder of downloaded
+# ASIC daily aggregate short-position files:
+PYTHONPATH=src python -m asx_drivers.cli --source live --asic-dir ~/asic --json web/data.json
 ```
 
-Live needs outbound access to `www.rba.gov.au` and `fred.stlouisfed.org`. No API
-key required. The front end picks up the drivers framing (title, tailwind/headwind
-labels) from the JSON automatically. Phase 1 adds the mixed-frequency commodity
-basket and the ASIC short-positioning component — see the spec.
+Live needs outbound access to `www.rba.gov.au` and `fred.stlouisfed.org`; no API
+key. The commodity basket loads each leg from FRED and renormalises weights over
+whatever loads, so a single dead series id degrades gracefully. The ASIC short
+component is optional and read from a local directory (the reliable path — ASIC
+daily files are fiddly to scrape); the index runs without it. The front end picks
+up the drivers framing (title, tailwind/headwind labels) from the JSON.
+
+**Mixed frequency (spec §5):** each component is normalised at its native
+frequency — the monthly basket against a 36-month window, the daily legs against
+252 days — then its 0–100 score is forward-filled onto the daily grid, stamped by
+availability (monthly prices lagged ~45 days, ASIC shorts by 4 business days) to
+avoid look-ahead. The composite requires every active component present, so the
+headline always uses the full set (early history is trimmed during warm-up).
 
 ---
 

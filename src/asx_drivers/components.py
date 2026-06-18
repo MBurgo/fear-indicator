@@ -39,3 +39,13 @@ def credit_spread_raw(hy_oas: pd.Series) -> pd.Series:
     history, like the volatility component in the Mood Index).
     """
     return hy_oas
+
+
+def short_interest_raw(short_pct: pd.Series) -> pd.Series:
+    """Market-wide aggregate short percentage (spec 3.5).
+
+    Rising aggregate short interest = growing bearish positioning = headwind, so
+    the component score is inverted downstream. Returns the level, z-scored
+    against its own recent history.
+    """
+    return short_pct
