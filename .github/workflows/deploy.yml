@@ -65,3 +65,17 @@ jobs:
             git commit -m "chore: update index data $(date -u +%F)"
             git push
           fi
+
+      - name: Trigger Cloudflare Pages deployment
+        env:
+          # Cloudflare Pages does not reliably rebuild on GITHUB_TOKEN pushes, so
+          # trigger a deploy explicitly. Create a Deploy Hook in the Pages project
+          # (Settings -> Builds & deployments -> Deploy Hooks) and store its URL as
+          # a repo secret named CLOUDFLARE_DEPLOY_HOOK_URL.
+          HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            curl -fsS -X POST "$HOOK" > /dev/null && echo "Triggered Cloudflare Pages deploy"
+          else
+            echo "No CLOUDFLARE_DEPLOY_HOOK_URL secret set; skipping deploy trigger."
+          fi
