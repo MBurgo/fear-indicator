@@ -73,15 +73,16 @@ availability (monthly prices lagged ~45 days, ASIC shorts by 4 business days) to
 avoid look-ahead. The composite requires every active component present, so the
 headline always uses the full set (early history is trimmed during warm-up).
 
-**Display bands & labels:** because averaging compresses the composite toward 50,
-the Strong Headwind / Headwind / Neutral / Tailwind / Strong Tailwind band *edges*
-are calibrated once from the index's own historical distribution (the 10/30/70/90
-percentiles) and then applied as fixed score cutoffs — so "score X = label Y" is a
-stable, publishable mapping and a past day's label never changes retroactively.
-Light hysteresis stops the label flickering when the score hovers on a boundary.
-The edges, labels and a plain-English tailwind/headwind summary are written into
-the JSON and rendered by the front end (gauge bands, legend, callout). Pass
-`--fixed-bands` for the spec's static 0–100 cutoffs instead.
+**Display scale & labels:** averaging compresses the raw composite toward 50, so
+the headline is shown as the composite's **percentile against its own history**
+(50 = a typical reading; low = unusual headwind, high = unusual tailwind). This
+uses the full 0–100 range so the gauge needle swings, with even 10/30/70/90 bands
+(Strong Headwind / Headwind / Neutral / Tailwind / Strong Tailwind) and light
+hysteresis to stop boundary flicker. The five component bars stay on their own raw
+0–100 scale. The score basis, band edges, labels and a plain-English
+tailwind/headwind summary are written into the JSON and rendered by the front end
+(gauge bands, legend, callout). Pass `--fixed-bands` for the raw composite score
+with static 0–100 cutoffs instead.
 
 ---
 

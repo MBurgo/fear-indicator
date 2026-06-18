@@ -49,6 +49,18 @@ def test_calibrated_labels_span_the_extremes():
     assert set(labels.dropna().unique()) >= {"Extreme Fear", "Neutral", "Extreme Greed"}
 
 
+def test_percentile_series_uses_full_range_and_preserves_order():
+    import numpy as np
+
+    idx = pd.date_range("2020-01-01", periods=200)
+    raw = pd.Series(50 + np.sin(np.linspace(0, 10, 200)) * 5, index=idx)  # compressed
+    pct = composite.percentile_series(raw)
+    assert pct.min() >= 0 and pct.max() <= 100
+    assert pct.max() - pct.min() > 90  # spreads across nearly the full range
+    # Monotonic: higher raw value -> higher percentile.
+    assert (raw.rank().values == pct.rank().values).all()
+
+
 def test_calibrate_band_edges_ascending_within_history():
     import numpy as np
 

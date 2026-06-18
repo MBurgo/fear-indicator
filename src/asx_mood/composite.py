@@ -39,16 +39,31 @@ MOOD_LABELS = ["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
 DRIVERS_LABELS = ["Strong Headwind", "Headwind", "Neutral", "Tailwind", "Strong Tailwind"]
 
 
+def percentile_series(series: pd.Series) -> pd.Series:
+    """Map each value to its percentile (0-100) within the non-NaN series.
+
+    Used for *display*: averaging compresses the raw composite toward 50, so the
+    gauge needle barely moves. Showing the percentile instead uses the full 0-100
+    range and lets the needle swing meaningfully. 50 = a median reading versus the
+    available history; low = an unusually strong headwind, high = an unusually
+    strong tailwind. Component bars stay on the raw scale (they are not averaged
+    and so are not compressed).
+    """
+    s = series.dropna()
+    if s.empty:
+        return series.copy()
+    pct = s.rank(pct=True) * 100.0
+    return pct.reindex(series.index)
+
+
 def calibrate_band_edges(
     series: pd.Series, quantiles: tuple[float, ...] = CALIBRATION_QUANTILES
 ) -> list[float]:
     """Calibrate four ascending score thresholds from the index's own history.
 
-    Unlike rank-against-all-history labelling, these edges are computed ONCE and
-    then applied as fixed score cutoffs, so "score X = label Y" is a stable,
-    publishable mapping and a past day's label never changes retroactively. Still
-    distribution-aware, so it preserves the band-compression fix. Falls back to
-    the spec's fixed edges when there is too little history to calibrate.
+    Computed once and applied as fixed cutoffs, so "score X = label Y" is stable
+    and a past day's label never changes retroactively. Falls back to the spec's
+    fixed edges when there is too little history to calibrate.
     """
     s = series.dropna()
     if len(s) < 60:

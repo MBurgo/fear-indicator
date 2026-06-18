@@ -20,7 +20,7 @@ import pandas as pd
 from . import TAGLINE, TITLE
 from . import index as idx_mod
 from .data import align
-from asx_mood.composite import DRIVERS_LABELS, calibrate_band_edges, latest_reading
+from asx_mood.composite import DRIVERS_LABELS, latest_reading, percentile_series
 
 COMPONENT_LABELS = {
     "commodity": "Commodity complex",
@@ -36,6 +36,9 @@ DAILY_KEYS = ["audusd", "cgs_10y_yield", "cgs_2y_yield", "hy_oas"]
 # Thresholds (component score) for calling a component a tailwind / headwind.
 TAILWIND_AT = 55.0
 HEADWIND_AT = 45.0
+
+# Even band edges on the percentile display scale (10/30/70/90).
+DISPLAY_EDGES = [10.0, 30.0, 70.0, 90.0]
 
 # Retained for the legacy --fixed-bands path only.
 LABEL_MAP = {
@@ -106,15 +109,19 @@ def run(args: argparse.Namespace) -> int:
         min_periods=args.min_periods,
     )
 
-    # Stable, distribution-calibrated band edges with hysteresis (preferred), or
-    # the spec's fixed 0-100 bands via --fixed-bands.
-    edges = calibrate_band_edges(composite_idx)
+    # Default: show the composite's percentile vs its own history on even bands,
+    # so the needle swings and "neutral" isn't a stuck-at-50 raw average. The
+    # raw-score path with fixed 0-100 bands is available via --fixed-bands.
     if args.fixed_bands:
-        reading = latest_reading(scores, composite_idx, calibrate=False)
+        display_idx = composite_idx
+        band_edges = [25.0, 45.0, 55.0, 75.0]
+        reading = latest_reading(scores, display_idx, calibrate=False)
         label = LABEL_MAP.get(reading.label, reading.label)
     else:
+        display_idx = percentile_series(composite_idx)
+        band_edges = DISPLAY_EDGES
         reading = latest_reading(
-            scores, composite_idx, edges=edges, names=DRIVERS_LABELS
+            scores, display_idx, edges=band_edges, names=DRIVERS_LABELS
         )
         label = reading.label
     summary = divergence_summary(reading.components)
@@ -138,11 +145,12 @@ def run(args: argparse.Namespace) -> int:
         payload["lowLabel"] = "Headwind"
         payload["highLabel"] = "Tailwind"
         payload["summary"] = summary
-        payload["bandEdges"] = edges
+        payload["bandEdges"] = band_edges
         payload["bandLabels"] = DRIVERS_LABELS
+        payload["scoreBasis"] = "raw" if args.fixed_bands else "percentile"
         payload["history"] = [
             {"date": d.strftime("%Y-%m-%d"), "score": round(float(v), 1)}
-            for d, v in composite_idx.dropna().items()
+            for d, v in display_idx.dropna().items()
         ]
         with open(args.json, "w") as fh:
             json.dump(payload, fh, indent=2)
