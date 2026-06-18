@@ -62,8 +62,10 @@ def _load_live(asic_dir: str | None = None) -> dict[str, object]:
         "short_pct": None,
     }
     if asic_dir:
-        inputs["short_pct"] = asic.build_short_series_from_dir(asic_dir)
-        print(f"  short positioning: loaded {len(inputs['short_pct'])} days from {asic_dir}")
+        sp = asic.build_short_series_from_dir(asic_dir)
+        inputs["short_pct"] = sp
+        span = f"{sp.index.min().date()}..{sp.index.max().date()}" if len(sp) else "empty"
+        print(f"  short positioning: {len(sp)} days ({span}) from {asic_dir}")
     return inputs
 
 

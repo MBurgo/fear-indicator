@@ -25,6 +25,9 @@ DAILY_WINDOW = 252
 MONTHLY_WINDOW = 36
 COMMODITY_MOMENTUM_MONTHS = 3
 SHORT_LAG_BDAYS = 4
+# ASIC history is often shorter / patchier than the market series, so let the
+# short component emit once it has ~200 observations (still a ~1-year window).
+SHORT_MIN_PERIODS = 200
 
 ORDER = ["commodity", "aud", "curve_slope", "credit_risk", "short_positioning"]
 
@@ -80,7 +83,7 @@ def build(
             components.short_interest_raw(short_pct),
             invert=True,
             window=window,
-            min_periods=min_periods,
+            min_periods=min(window, SHORT_MIN_PERIODS),
         )
         scores["short_positioning"] = frequency.lag_to_daily(
             short_score, daily_index, lag_bdays=SHORT_LAG_BDAYS
