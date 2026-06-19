@@ -24,6 +24,24 @@ def test_commodity_momentum_matches_pct_change():
     assert abs(m.iloc[-1] - expected) < 1e-12
 
 
+def test_volatility_component_inverts():
+    # A late burst of AUD turbulence should push the (inverted) volatility score
+    # into the lower (headwind) half by the end of the series.
+    rng = np.random.default_rng(7)
+    n = 320
+    ret = rng.normal(0, 0.002, n)
+    ret[-30:] = rng.normal(0, 0.02, 30)  # volatility spike at the end
+    audusd = _series(0.72 * np.exp(np.cumsum(ret)))
+    cgs10 = _series(np.full(n, 4.0) + rng.normal(0, 0.01, n))
+    cgs2 = _series(np.full(n, 3.2) + rng.normal(0, 0.01, n))
+    hy = _series(np.full(n, 3.5) + rng.normal(0, 0.05, n))
+    months = pd.date_range("2021-01-01", periods=40, freq="MS")
+    basket = pd.Series(np.linspace(100, 120, 40), index=months, name="commodity_basket")
+    scores, _ = index.build(audusd, cgs10, cgs2, hy, basket, window=252)
+    assert "volatility" in scores.columns
+    assert scores["volatility"].iloc[-1] < 50
+
+
 def test_credit_risk_inverts_in_composite():
     # Rising credit spreads must lower the credit component score (headwind).
     rng = np.random.default_rng(3)

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-# Reuse the AUD momentum calculation from the Mood Index - identical definition.
-from asx_mood.components import aud_momentum_raw  # noqa: F401  (re-exported)
+# Reuse calculations from the Mood Index - identical definitions.
+from asx_mood.components import aud_momentum_raw, realised_vol_raw  # noqa: F401
 
 
 def commodity_momentum_raw(price: pd.Series, window: int = 63) -> pd.Series:

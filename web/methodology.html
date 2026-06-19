@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Methodology — ASX Drivers Index</title>
   <meta name="description" content="How the ASX Drivers Index is built: components, calculation, data sources and limitations." />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <main class="wrap method">
@@ -21,15 +21,15 @@
         drive Australian shares are, on balance, a <strong>tailwind</strong> or a
         <strong>headwind</strong>. The Australian market is heavily concentrated in mining and
         banking, so a handful of outside forces &mdash; commodity prices, the Australian dollar,
-        the interest-rate curve, global credit conditions and how heavily the market is
-        positioned short &mdash; explain a large share of what moves it.</p>
+        the interest-rate curve, global credit conditions, how heavily the market is positioned
+        short and how turbulent the dollar is &mdash; explain a large share of what moves it.</p>
       <p>It is a <strong>market-conditions gauge, not advice and not a forecast</strong>. It
         measures the climate for Australian equities, not their prices, and it deliberately uses
         no licensed share-price data &mdash; every input is free and official.</p>
     </section>
 
     <section>
-      <h2>The five components</h2>
+      <h2>The six components</h2>
       <table class="method-table">
         <thead>
           <tr><th>Component</th><th>Raw signal</th><th>Cadence</th><th>High score means</th><th>Source</th></tr>
@@ -39,6 +39,7 @@
           <tr><td>AUD risk flow</td><td>AUD/USD 20-day momentum</td><td>Daily</td><td>Tailwind</td><td>RBA table F11.1</td></tr>
           <tr><td>Yield-curve slope</td><td>10-year minus 2-year Commonwealth Government bond yield</td><td>Daily</td><td>Tailwind</td><td>RBA table F2</td></tr>
           <tr><td>Global credit risk</td><td>US high-yield credit spread (level)</td><td>Daily</td><td>Headwind (inverted)</td><td>FRED (ICE BofA OAS)</td></tr>
+          <tr><td>AUD volatility</td><td>20-day realised volatility of AUD/USD, annualised</td><td>Daily</td><td>Headwind (inverted)</td><td>RBA table F11.1</td></tr>
           <tr><td>Short positioning</td><td>Market-wide aggregate short interest (% on issue)</td><td>Daily, 4-day lag</td><td>Headwind (inverted)</td><td>ASIC short-position reports</td></tr>
         </tbody>
       </table>
@@ -58,6 +59,11 @@
           risk appetite; the US high-yield spread is the cleanest, most liquid measure of it. It
           also recovers the &ldquo;junk-bond demand&rdquo; dimension Australia lacks a local
           market for. (The VIX is deliberately avoided &mdash; it is a licensed product.)</li>
+        <li><strong>AUD volatility.</strong> The realised volatility of the dollar &mdash; how
+          turbulent it has been, irrespective of direction. The AUD sells off <em>and</em> swings
+          harder in risk-off episodes, so its volatility is a clean, freely-sourced stand-in for
+          the implied-volatility &ldquo;fear&rdquo; gauge we can&rsquo;t licence. It leans on the
+          same series as AUD risk flow but measures magnitude, not direction.</li>
         <li><strong>Short positioning.</strong> Aggregate short interest is the one input that
           measures how investors are <em>actually</em> positioned on ASX stocks rather than
           inferring it. It is positioning, not a forecast &mdash; crowded shorts can precede
@@ -74,9 +80,9 @@
           days for daily inputs, 36 months for the monthly basket), so each input is always
           measured relative to its own normal range, not an absolute threshold.</li>
         <li>Clip the z-score to &plusmn;3 and map linearly to 0&ndash;100 (a z of 0 &rarr; 50).</li>
-        <li>Invert the headwind-positive inputs (credit risk, short positioning) so that, for
-          every component, a high score means &ldquo;tailwind&rdquo;.</li>
-        <li>Average the five component scores with equal weight to form the composite.</li>
+        <li>Invert the headwind-positive inputs (credit risk, AUD volatility, short positioning) so
+          that, for every component, a high score means &ldquo;tailwind&rdquo;.</li>
+        <li>Average the six component scores with equal weight to form the composite.</li>
       </ol>
       <p>Equal weighting is the defensible default: it makes no claim that any one signal is more
         predictive. Several inputs (commodities, the AUD, credit) share a common global risk
@@ -84,13 +90,13 @@
         rather than tuned away.</p>
 
       <h3>The headline scale</h3>
-      <p>Averaging five components compresses the composite toward the middle, so the headline is
+      <p>Averaging six components compresses the composite toward the middle, so the headline is
         shown as the composite&rsquo;s <strong>percentile against its own history</strong> rather
         than the raw average. <strong>50 is a typical reading</strong>; a low number marks an
         unusually strong headwind and a high number an unusually strong tailwind. The bands are
         even &mdash; Strong Headwind (0&ndash;10), Headwind (10&ndash;30), Neutral (30&ndash;70),
         Tailwind (70&ndash;90), Strong Tailwind (90&ndash;100) &mdash; and a small amount of
-        hysteresis stops the label flickering when the reading hovers on a boundary. The five
+        hysteresis stops the label flickering when the reading hovers on a boundary. The six
         component bars stay on their own raw 0&ndash;100 scale.</p>
 
       <h3>Mixed-frequency handling</h3>

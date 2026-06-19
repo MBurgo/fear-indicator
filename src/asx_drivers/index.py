@@ -29,7 +29,7 @@ SHORT_LAG_BDAYS = 4
 # short component emit once it has ~200 observations (still a ~1-year window).
 SHORT_MIN_PERIODS = 200
 
-ORDER = ["commodity", "aud", "curve_slope", "credit_risk", "short_positioning"]
+ORDER = ["commodity", "aud", "curve_slope", "credit_risk", "volatility", "short_positioning"]
 
 
 def build(
@@ -72,6 +72,16 @@ def build(
     )
     scores["credit_risk"] = frequency.daily_score(
         components.credit_spread_raw(hy_oas),
+        invert=True,
+        window=window,
+        min_periods=min_periods,
+    )
+
+    # Realised volatility of the AUD as a fear/turbulence proxy: high vol = fear =
+    # headwind, so inverted. Reuses the AUD series already pulled for the momentum
+    # component (direction there; magnitude here).
+    scores["volatility"] = frequency.daily_score(
+        components.realised_vol_raw(audusd),
         invert=True,
         window=window,
         min_periods=min_periods,

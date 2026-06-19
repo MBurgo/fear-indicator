@@ -109,6 +109,7 @@ def test_phase1_build_with_short_adds_component():
         "aud",
         "curve_slope",
         "credit_risk",
+        "volatility",
         "short_positioning",
     ]
     assert idx.dropna().between(0, 100).all()

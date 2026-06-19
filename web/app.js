@@ -14,7 +14,7 @@ const HEADWIND_AT = 45;
 
 const COMPONENT_LABELS = {
   momentum: "Momentum", strength: "Stock strength", breadth: "Volume breadth",
-  safe_haven: "Safe haven", volatility: "Volatility", aud: "AUD risk flow",
+  safe_haven: "Safe haven", volatility: "AUD volatility", aud: "AUD risk flow",
   commodity: "Commodity complex", curve_slope: "Yield-curve slope",
   credit_risk: "Global credit risk", short_positioning: "Short positioning",
   china: "China momentum",

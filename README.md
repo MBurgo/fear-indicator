@@ -23,6 +23,7 @@ forward-fill (spec section 5). All free; the daily/monthly legs are keyless.
 | AUD risk flow | AUD/USD 20-day momentum | daily | high = tailwind | RBA F11.1 |
 | Yield-curve slope | 10y − 2y CGS yield | daily | high = tailwind | RBA F2 |
 | Global credit risk | US high-yield spread level | daily | high = headwind (inverted) | FRED `BAMLH0A0HYM2` |
+| AUD volatility | 20-day realised vol of AUD/USD | daily | high = headwind (inverted) | RBA F11.1 |
 | Short positioning | Market-wide aggregate short % | daily, T+4 | high = headwind (inverted) | ASIC (optional) |
 
 ```bash

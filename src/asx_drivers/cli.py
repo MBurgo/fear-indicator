@@ -27,6 +27,7 @@ COMPONENT_LABELS = {
     "aud": "AUD risk flow",
     "curve_slope": "Yield-curve slope",
     "credit_risk": "Global credit risk",
+    "volatility": "AUD volatility",
     "short_positioning": "Short positioning",
 }
 
