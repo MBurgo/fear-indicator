@@ -42,27 +42,6 @@ def test_volatility_component_inverts():
     assert scores["volatility"].iloc[-1] < 50
 
 
-def test_bbsw_stress_optional_and_inverts():
-    rng = np.random.default_rng(9)
-    n = 320
-    audusd = _series(0.72 * np.exp(np.cumsum(rng.normal(0, 0.002, n))))
-    cgs10 = _series(np.full(n, 4.0) + rng.normal(0, 0.01, n))
-    cgs2 = _series(np.full(n, 3.2) + rng.normal(0, 0.01, n))
-    hy = _series(np.full(n, 3.5) + rng.normal(0, 0.05, n))
-    months = pd.date_range("2021-01-01", periods=40, freq="MS")
-    basket = pd.Series(np.linspace(100, 120, 40), index=months, name="commodity_basket")
-
-    # Without bbsw_spread the component is absent.
-    scores, _ = index.build(audusd, cgs10, cgs2, hy, basket, window=252)
-    assert "bbsw_stress" not in scores.columns
-
-    # A widening funding spread should push the (inverted) score into the lower half.
-    bbsw = _series(np.linspace(0.10, 0.60, n))  # spread widening = more stress
-    scores2, _ = index.build(audusd, cgs10, cgs2, hy, basket, bbsw_spread=bbsw, window=252)
-    assert "bbsw_stress" in scores2.columns
-    assert scores2["bbsw_stress"].iloc[-1] < 50
-
-
 def test_credit_risk_inverts_in_composite():
     # Rising credit spreads must lower the credit component score (headwind).
     rng = np.random.default_rng(3)

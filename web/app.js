@@ -17,7 +17,7 @@ const COMPONENT_LABELS = {
   safe_haven: "Safe haven", volatility: "AUD volatility", aud: "AUD risk flow",
   commodity: "Commodity complex", curve_slope: "Yield-curve slope",
   credit_risk: "Global credit risk", short_positioning: "Short positioning",
-  bbsw_stress: "Bank funding stress", china: "China momentum",
+  china: "China momentum",
 };
 
 const BAND_DESCRIPTIONS = {

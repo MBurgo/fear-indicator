@@ -49,14 +49,3 @@ def short_interest_raw(short_pct: pd.Series) -> pd.Series:
     against its own recent history.
     """
     return short_pct
-
-
-def funding_stress_raw(bbsw_spread: pd.Series) -> pd.Series:
-    """Bank funding stress: 3-month BBSW minus the cash rate (level).
-
-    A wider spread means more expensive bank wholesale funding, which weighs on
-    the financials half of the ASX = headwind, so the score is inverted
-    downstream. Largely independent of the global risk factor the other
-    components share.
-    """
-    return bbsw_spread

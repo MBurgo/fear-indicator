@@ -19,15 +19,11 @@ import requests
 
 F11_URL = "https://www.rba.gov.au/statistics/tables/csv/f11.1-data.csv"
 F2_URL = "https://www.rba.gov.au/statistics/tables/csv/f2-data.csv"
-F1_URL = "https://www.rba.gov.au/statistics/tables/csv/f1.1-data.csv"
 
 AUDUSD_SERIES_ID = "FXRUSD"
 # RBA F2 daily CGS yields use a trailing 'D' (daily) suffix.
 CGS_10Y_SERIES_ID = "FCMYGBAG10D"
 CGS_2Y_SERIES_ID = "FCMYGBAG2D"
-# RBA F1.1 money-market (best-guess ids; verify via describe_rba_table if wrong).
-BBSW_3M_SERIES_ID = "FIRMMBAB90D"
-CASH_RATE_SERIES_ID = "FIRMMCRTD"
 
 _TIMEOUT = 60
 _RETRIES = 4
@@ -112,31 +108,3 @@ def load_cgs_2y_yield(text: str | None = None) -> pd.Series:
     if text is None:
         text = _fetch(F2_URL)
     return parse_rba_csv(text, CGS_2Y_SERIES_ID).rename("cgs_2y_yield")
-
-
-def describe_rba_table(text: str) -> dict[str, str]:
-    """Return {series_id: title} for an RBA CSV, to discover available series."""
-    rows = list(csv_rows(text))
-    title_row = next((r for r in rows if r and r[0].strip() == "Title"), None)
-    id_row = next((r for r in rows if r and r[0].strip() == "Series ID"), None)
-    out: dict[str, str] = {}
-    if id_row:
-        for i in range(1, len(id_row)):
-            sid = id_row[i].strip()
-            if sid:
-                out[sid] = title_row[i].strip() if title_row and i < len(title_row) else ""
-    return out
-
-
-def load_bbsw_spread(text: str | None = None) -> pd.Series:
-    """3-month BBSW minus the cash-rate target (bank funding stress), from F1.1.
-
-    A positive spread that widens signals expensive bank wholesale funding. The
-    OIS leg isn't published, so the cash-rate target is used as the risk-free
-    proxy (standard for short tenors).
-    """
-    if text is None:
-        text = _fetch(F1_URL)
-    bbsw = parse_rba_csv(text, BBSW_3M_SERIES_ID)
-    cash = parse_rba_csv(text, CASH_RATE_SERIES_ID)
-    return (bbsw - cash).dropna().rename("bbsw_spread")

@@ -26,7 +26,6 @@ COMPONENT_LABELS = {
     "commodity": "Commodity complex",
     "aud": "AUD risk flow",
     "curve_slope": "Yield-curve slope",
-    "bbsw_stress": "Bank funding stress",
     "credit_risk": "Global credit risk",
     "volatility": "AUD volatility",
     "short_positioning": "Short positioning",
@@ -68,28 +67,7 @@ def _load_live(asic_dir: str | None = None) -> dict[str, object]:
         "hy_oas": fred.load_hy_oas(),
         "commodity_basket": basket,
         "short_pct": None,
-        "bbsw_spread": None,
     }
-
-    # Optional bank funding-stress component. Series ids are best-guesses; if they
-    # are wrong the component is skipped and the candidate F1 series are printed so
-    # they can be corrected, without breaking the rest of the index.
-    try:
-        bs = rba.load_bbsw_spread()
-        inputs["bbsw_spread"] = bs
-        print(f"  bank funding stress: {len(bs)} days from RBA F1")
-    except Exception as exc:  # noqa: BLE001
-        print(f"  bank funding stress: skipped ({type(exc).__name__}: {str(exc)[:90]})")
-        try:
-            cat = rba.describe_rba_table(rba._fetch(rba.F1_URL))
-            cand = {
-                k: v for k, v in cat.items()
-                if any(w in v.lower() for w in ("bill", "cash", "bbsw", "ois", "overnight", "swap"))
-            }
-            print(f"  candidate F1 series (id: title): {cand}")
-        except Exception:  # noqa: BLE001
-            pass
-
     if asic_dir:
         sp = asic.build_short_series_from_dir(asic_dir)
         inputs["short_pct"] = sp
@@ -128,7 +106,6 @@ def run(args: argparse.Namespace) -> int:
         daily["hy_oas"],
         frames["commodity_basket"],
         short_pct=frames.get("short_pct"),
-        bbsw_spread=frames.get("bbsw_spread"),
         window=args.window,
         min_periods=args.min_periods,
     )
