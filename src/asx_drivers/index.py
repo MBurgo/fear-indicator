@@ -29,7 +29,10 @@ SHORT_LAG_BDAYS = 4
 # short component emit once it has ~200 observations (still a ~1-year window).
 SHORT_MIN_PERIODS = 200
 
-ORDER = ["commodity", "aud", "curve_slope", "credit_risk", "volatility", "short_positioning"]
+ORDER = [
+    "commodity", "aud", "curve_slope", "bbsw_stress", "credit_risk",
+    "volatility", "short_positioning",
+]
 
 
 def build(
@@ -39,6 +42,7 @@ def build(
     hy_oas: pd.Series,
     commodity_basket: pd.Series,
     short_pct: pd.Series | None = None,
+    bbsw_spread: pd.Series | None = None,
     window: int = DAILY_WINDOW,
     monthly_window: int = MONTHLY_WINDOW,
     min_periods: int | None = None,
@@ -70,6 +74,18 @@ def build(
         window=window,
         min_periods=min_periods,
     )
+
+    # Optional bank funding-stress component (3m BBSW - cash rate): high spread =
+    # stress = headwind, inverted. On its own RBA F1 calendar, so reindex + ffill.
+    if bbsw_spread is not None and not bbsw_spread.dropna().empty:
+        bbsw_score = frequency.daily_score(
+            components.funding_stress_raw(bbsw_spread),
+            invert=True,
+            window=window,
+            min_periods=min_periods,
+        )
+        scores["bbsw_stress"] = bbsw_score.reindex(daily_index, method="ffill")
+
     scores["credit_risk"] = frequency.daily_score(
         components.credit_spread_raw(hy_oas),
         invert=True,
