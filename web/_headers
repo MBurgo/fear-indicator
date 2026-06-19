@@ -1,0 +1,16 @@
+# Cloudflare Pages cache rules.
+# HTML and the daily data file must revalidate so copy/data changes appear
+# promptly; the versioned JS/CSS (app.js?v=, styles.css?v=) can cache normally
+# because their URLs change when they do.
+
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/methodology.html
+  Cache-Control: no-cache
+
+/data.json
+  Cache-Control: no-cache
